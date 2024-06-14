@@ -1,0 +1,177 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Covenant API
+  license:
+    name: The 3-Clause BSD License
+servers:
+  - url: http://covenant.freelibrary.info
+paths:
+  /mint/ark/namespace:
+    post:
+      summary: Create a new ARK namespace
+      operationId: mintArkNamespace
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                namespace:
+                  type: string
+                length:
+                  type: integer
+                shoulder:
+                  type: string
+                naan:
+                  type: string
+                checksums:
+                  type: boolean
+                noidType:
+                  type: string
+                  enum: [NUMERIC, ALPHA, ALPHA_ALL, ALPHANUMERIC, ALPHANUMERIC_ALL, REGEX_PATTERN, REGEX_PATTERN_ALL]
+              required:
+                - namespace
+                - length
+                - naan
+                - noidType
+      responses:
+        201:
+          description: ARK minter has been created for the supplied namespace
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /mint/ark:
+    post:
+      summary: Create an ARK
+      description: Creates an ARK in a previously created namespace
+      operationId: mintARK
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                namespace:
+                  type: string
+      responses:
+        200:
+          description: Requested ARK has been created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ARK"
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /mint/noid/namespace:
+    post:
+      summary: Create a new NOID namespace
+      operationId: mintNoidNamespace
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                namespace:
+                  type: string
+                length:
+                  type: integer
+                shoulder:
+                  type: string
+                checksums:
+                  type: boolean
+                noidType:
+                  type: string
+                  enum: [NUMERIC, ALPHA, ALPHA_ALL, ALPHANUMERIC, ALPHANUMERIC_ALL, REGEX_PATTERN, REGEX_PATTERN_ALL]
+              required:
+                - namespace
+                - length
+                - noidType
+      responses:
+        201:
+          description: ARK minter has been created for the supplied namespace
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /mint/noid:
+    post:
+      summary: Create an NOID
+      description: Creates a NOID in a previously created namespace
+      operationId: mintNOID
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                namespace:
+                  type: string
+      responses:
+        200:
+          description: Requested NOID has been created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NOID"
+        default:
+          description: Unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    ARK:
+      type: object
+      required:
+        - ark
+        - namespace
+      properties:
+        ark:
+          type: string
+        namespace:
+          type: string
+    ARKs:
+      type: array
+      items:
+        $ref: "#/components/schemas/ARK"
+    NOID:
+      type: object
+      required:
+        - noid
+        - namespace
+      properties:
+        noid:
+          type: string
+        namespace:
+          type: string
+    NOIDs:
+      type: array
+      items:
+        $ref: "#/components/schemas/NOID"
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

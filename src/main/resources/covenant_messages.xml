@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+
+<properties>
+  <entry key="message-class-name">info.freelibrary.ark.MessageCodes</entry>
+
+  <entry key="ARK_001">Supplied ARK length must be between 0 and 128</entry>
+  <entry key="ARK_002">Promises are not allowed to be null</entry>
+  <entry key="ARK_003">NOID generator failed to mint an ID: {}</entry>
+  <entry key="ARK_004">Successfully minted a new NOID: {}</entry>
+  <entry key="ARK_005">NoidType was not expected: {}</entry>
+  <entry key="ARK_006">NoidType is not allowed to be null</entry>
+  <entry key="ARK_007">Covenant server successfully started on port {}</entry>
+  <entry key="ARK_008">NOIDs minted by the timed test minter: {}</entry>
+  <entry key="ARK_009">Timed test minter created {} NOIDs in {}</entry>
+  <entry key="ARK_010">Minter does not have any more NOIDs to mint</entry>
+  <entry key="ARK_011">Supplied shoulder ('{}') does not conform to the "first digit" convention</entry>
+  <entry key="ARK_012">Test failed to throw expected exception: {}</entry>
+  <entry key="ARK_013">Identifier length must be a positive integer: {}</entry>
+  <entry key="ARK_014">Supplied identifier length is not a valid length: {}</entry>
+  <entry key="ARK_015">Successfully shutdown test server on port: {}</entry>
+  <entry key="ARK_016">The main verticle was started, but the port ({}) is not ready!</entry>
+  <entry key="ARK_017">MintNoidNamespaceHandler received a minting request: {}</entry>
+  <entry key="ARK_018">All NoidMinters must be given a namespace (i.e., name)</entry>
+  <entry key="ARK_019">{}=[#{}, {}, bits: {}]</entry>
+  <entry key="ARK_020">{} NOIDs written to random access file: {} [{}]</entry>
+  <entry key="ARK_021">Writing NOIDs to NAF file [start: {}, buffer capacity: {}]</entry>
+  <entry key="ARK_022">NAF iterator for '{}' starts at '{}' and skips '{}' NOIDs at a time</entry>
+  <entry key="ARK_023">Failed to read the correct number of bytes from NAF</entry>
+  <entry key="ARK_024">Failed reading from NAF at NOID index: {}</entry>
+  <entry key="ARK_025">RandomizedIterator failed to clean up the NAF on shutdown: {}</entry>
+  <entry key="ARK_026">The randomized minter can't randomize numbers larger than 2^62; {} is too large</entry>
+  <entry key="ARK_027">Running test method: {}</entry>
+  <entry key="ARK_028">{}=[#{}, {}]</entry>
+
+</properties>

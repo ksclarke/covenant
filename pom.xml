@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>covenant</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>Covenant</name>
+  <description>An Archival Resource Key microservice for the Vert.x toolkit</description>
+  <url>http://projects.freelibrary.info/covenant</url>
+
+  <licenses>
+    <license>
+      <name>The 3-Clause BSD License</name>
+      <url>https://opensource.org/licenses/BSD-3-clause</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:git@github.com:ksclarke/covenant.git</connection>
+    <developerConnection>scm:git:git@github.com:ksclarke/covenant.git</developerConnection>
+    <url>git@github.com:ksclarke/covenant.git</url>
+  </scm>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/ksclarke/covenant/issues</url>
+  </issueManagement>
+
+  <properties>
+    <vertx.version>3.9.4</vertx.version>
+    <j2html.version>1.3.0</j2html.version>
+    <freelib.utils.version>2.1.0</freelib.utils.version>
+    <freelib.maven.version>0.1.3</freelib.maven.version>
+    <slf4j.ext.version>1.7.26</slf4j.ext.version>
+    <snakeyaml.version>1.26</snakeyaml.version>
+    <mapdb.version>3.0.8</mapdb.version>
+
+    <!-- Build plugin versions -->
+    <vertx.plugin.version>1.0.23</vertx.plugin.version>
+    <codacy.plugin.version>1.2.0</codacy.plugin.version>
+
+    <!-- Name of the main Vert.x verticle -->
+    <main.verticle>info.freelibrary.ark.MainVerticle</main.verticle>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>info.freelibrary</groupId>
+      <artifactId>freelib-utils</artifactId>
+      <version>${freelib.utils.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-core</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.j2html</groupId>
+      <artifactId>j2html</artifactId>
+      <version>${j2html.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web-client</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web-api-contract</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>${snakeyaml.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mapdb</groupId>
+      <artifactId>mapdb</artifactId>
+      <version>${mapdb.version}</version>
+    </dependency>
+
+    <!-- Below is a dependency that needs updating due to security issue (may be able to remove in future) -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-ext</artifactId>
+      <version>${slf4j.ext.version}</version>
+    </dependency>
+
+    <!-- A Vert.x plug-in for more flexible configuration control -->
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-config</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <!-- Below dependencies only used for testing -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-unit</artifactId>
+      <version>${vertx.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>info.freelibrary</groupId>
+        <artifactId>freelib-maven-plugins</artifactId>
+        <version>${freelib.maven.version}</version>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <goals>
+              <goal>generate-codes</goal>
+            </goals>
+            <configuration>
+              <generatedSourcesDirectory>${project.basedir}/src/main/generated</generatedSourcesDirectory>
+              <messageFiles>
+                <messageFile>src/main/resources/covenant_messages.xml</messageFile>
+              </messageFiles>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-pmd-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>info.freelibrary</groupId>
+            <artifactId>freelib-resources</artifactId>
+            <version>${freelib.resources.version}</version>
+          </dependency>
+        </dependencies>
+        <configuration>
+          <stylesheetfile>javadocs.css</stylesheetfile>
+          <nonavbar>true</nonavbar>
+          <show>public</show>
+          <nosince>true</nosince>
+          <notimestamp>true</notimestamp>
+          <bottom> </bottom>
+          <detectLinks>false</detectLinks>
+          <additionalJOptions>
+            <additionalJOption>-J-Dhttp.agent=maven-javadoc-plugin-${project.name}</additionalJOption>
+          </additionalJOptions>
+          <links>
+            <link>https://vertx.io/docs/apidocs/</link>
+          </links>
+          <sourcepath>src/main/java:src/main/generated</sourcepath>
+        </configuration>
+        <executions>
+          <execution>
+            <id>site-javadocs</id>
+            <phase>site</phase>
+            <goals>
+              <goal>javadoc</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.gavinmogan</groupId>
+        <artifactId>codacy-maven-plugin</artifactId>
+        <version>${codacy.plugin.version}</version>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>**/*IT.java</exclude>
+          </excludes>
+          <systemPropertyVariables>
+            <vertx.logger-delegate-factory-class-name>io.vertx.core.logging.SLF4JLogDelegateFactory</vertx.logger-delegate-factory-class-name>
+            <vertx-config-path>${project.basedir}/target/test-classes/test-config.properties</vertx-config-path>
+            <http.port>${http.port}</http.port>
+          </systemPropertyVariables>
+          <argLine>${jacoco.agent.arg}</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>io.reactiverse</groupId>
+        <artifactId>vertx-maven-plugin</artifactId>
+        <version>${vertx.plugin.version}</version>
+        <executions>
+          <execution>
+            <id>vertx-plugin</id>
+            <goals>
+              <goal>initialize</goal>
+              <goal>package</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <verticle>${main.verticle}</verticle>
+          <redeploy>true</redeploy>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!-- Enables pushing project documentation up to an S3 bucket -->
+  <distributionManagement>
+    <site>
+      <id>s3.site</id>
+      <url>s3://projects.freelibrary.info/${project.name}</url>
+    </site>
+  </distributionManagement>
+
+  <parent>
+    <artifactId>freelib-parent</artifactId>
+    <groupId>info.freelibrary</groupId>
+    <version>8.0.9</version>
+  </parent>
+
+</project>
