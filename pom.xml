@@ -33,7 +33,7 @@
     <freelib.utils.version>2.1.0</freelib.utils.version>
     <freelib.maven.version>0.1.3</freelib.maven.version>
     <slf4j.ext.version>1.7.26</slf4j.ext.version>
-    <snakeyaml.version>1.26</snakeyaml.version>
+    <snakeyaml.version>2.0</snakeyaml.version>
     <mapdb.version>3.0.8</mapdb.version>
 
     <!-- Build plugin versions -->
