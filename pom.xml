@@ -6,13 +6,13 @@
   <artifactId>covenant</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>Covenant</name>
-  <description>An Archival Resource Key microservice for the Vert.x toolkit</description>
+  <description>An Archival Resource Key (ARK) microservice for the Vert.x toolkit</description>
   <url>http://projects.freelibrary.info/covenant</url>
 
   <licenses>
     <license>
-      <name>The 3-Clause BSD License</name>
-      <url>https://opensource.org/licenses/BSD-3-clause</url>
+      <name>Mozilla Public License 2.0 (MPL-2.0)</name>
+      <url>https://opensource.org/licenses/MPL-2.0</url>
     </license>
   </licenses>
 
@@ -28,13 +28,13 @@
   </issueManagement>
 
   <properties>
-    <vertx.version>3.9.4</vertx.version>
-    <j2html.version>1.3.0</j2html.version>
-    <freelib.utils.version>2.1.0</freelib.utils.version>
-    <freelib.maven.version>0.1.3</freelib.maven.version>
-    <slf4j.ext.version>1.7.26</slf4j.ext.version>
-    <snakeyaml.version>1.26</snakeyaml.version>
-    <mapdb.version>3.0.8</mapdb.version>
+    <vertx.version>4.5.8</vertx.version>
+    <j2html.version>1.4.0</j2html.version>
+    <freelib.utils.version>4.0.5</freelib.utils.version>
+    <freelib.maven.version>0.4.7</freelib.maven.version>
+    <slf4j.ext.version>2.0.13</slf4j.ext.version>
+    <snakeyaml.version>2.0</snakeyaml.version>
+    <mapdb.version>3.1.0</mapdb.version>
 
     <!-- Build plugin versions -->
     <vertx.plugin.version>1.0.23</vertx.plugin.version>
@@ -72,7 +72,7 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-web-api-contract</artifactId>
+      <artifactId>vertx-web-openapi</artifactId>
       <version>${vertx.version}</version>
     </dependency>
     <dependency>
@@ -84,6 +84,19 @@
       <groupId>org.mapdb</groupId>
       <artifactId>mapdb</artifactId>
       <version>${mapdb.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.jetbrains.kotlin</groupId>
+          <artifactId>kotlin-stdlib</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!-- MapDB uses a snapshot dependency, but we want a pinned version -->
+    <dependency>
+      <groupId>org.jetbrains.kotlin</groupId>
+      <artifactId>kotlin-stdlib</artifactId>
+      <version>1.9.24</version>
     </dependency>
 
     <!-- Below is a dependency that needs updating due to security issue (may be able to remove in future) -->
@@ -99,6 +112,7 @@
       <artifactId>vertx-config</artifactId>
       <version>${vertx.version}</version>
     </dependency>
+
     <!-- Below dependencies only used for testing -->
     <dependency>
       <groupId>ch.qos.logback</groupId>

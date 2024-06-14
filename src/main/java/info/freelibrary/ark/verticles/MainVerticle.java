@@ -24,16 +24,16 @@ import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import io.vertx.ext.web.openapi.RouterBuilder;
 
 /**
  * Main verticle that starts the application.
  */
 public class MainVerticle extends AbstractVerticle {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class, MessageCodes.BUNDLE);
-
     private static final String API_SPEC = "src/main/resources/covenant.yaml";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class, MessageCodes.BUNDLE);
 
     private HttpServer myServer;
 
@@ -67,21 +67,6 @@ public class MainVerticle extends AbstractVerticle {
     }
 
     /**
-     * Configure the endpoints that are defined in the OpenAPI specification.
-     *
-     * @param aRouterFactory A factory for router creation
-     * @return A router configured with the API endpoints
-     */
-    private Router configureApiEndpoints(final OpenAPI3RouterFactory aRouterFactory) {
-        aRouterFactory.addHandlerByOperationId(Op.MINT_ARK_NAMESPACE, new MintArkNamespaceHandler(vertx));
-        aRouterFactory.addHandlerByOperationId(Op.MINT_NOID_NAMESPACE, new MintNoidNamespaceHandler(vertx));
-        aRouterFactory.addHandlerByOperationId(Op.MINT_NOID, new MintNoidHandler(vertx));
-        aRouterFactory.addHandlerByOperationId(Op.MINT_ARK, new MintArkHandler(vertx));
-
-        return aRouterFactory.getRouter();
-    }
-
-    /**
      * Configure the Covenant server.
      *
      * @param aConfig A JSON configuration
@@ -90,22 +75,26 @@ public class MainVerticle extends AbstractVerticle {
     private void configureServer(final JsonObject aConfig, final Promise<Void> aPromise) {
         final int port = aConfig.getInteger(Config.HTTP_PORT);
 
-        // Create the endpoints defined in the OpenAPI specification file
-        OpenAPI3RouterFactory.create(vertx, API_SPEC, creation -> {
-            if (creation.succeeded()) {
-                final Router router = configureApiEndpoints(creation.result());
+        RouterBuilder.create(vertx, API_SPEC).onSuccess(routerBuilder -> {
+            final Router router;
 
-                // Set up page handlers
-                router.get("/admin").handler(new PageHandler());
-                router.get("/").handler(new PageHandler());
+            // Associate handlers with OpenAPI operation IDs
+            routerBuilder.operation(Op.MINT_ARK_NAMESPACE).handler(new MintArkNamespaceHandler(vertx));
+            routerBuilder.operation(Op.MINT_NOID_NAMESPACE).handler(new MintNoidNamespaceHandler(vertx));
+            routerBuilder.operation(Op.MINT_NOID).handler(new MintNoidHandler(vertx));
+            routerBuilder.operation(Op.MINT_ARK).handler(new MintArkHandler(vertx));
 
-                // Start the Covenant server
-                myServer = vertx.createHttpServer().requestHandler(router);
-                myServer.listen(port, new StartupHandler(port, aPromise));
-            } else {
-                aPromise.fail(creation.cause());
-            }
-        });
+            // Create the router from the OpenAPI specification
+            router = routerBuilder.createRouter();
+
+            // Set up page handlers
+            router.get("/admin").handler(new PageHandler());
+            router.get("/").handler(new PageHandler());
+
+            // Start the Covenant server
+            myServer = vertx.createHttpServer().requestHandler(router);
+            myServer.listen(port, new StartupHandler(port, aPromise));
+        }).onFailure(aPromise::fail);
     }
 
     /**
@@ -114,14 +103,14 @@ public class MainVerticle extends AbstractVerticle {
     private final class StartupHandler implements Handler<AsyncResult<HttpServer>> {
 
         /**
-         * A promise that the application startup will happen.
-         */
-        private final Promise<Void> myPromise;
-
-        /**
          * The port at which the server should be started.
          */
         private final int myPort;
+
+        /**
+         * A promise that the application startup will happen.
+         */
+        private final Promise<Void> myPromise;
 
         /**
          * Creates a new startup handler.
