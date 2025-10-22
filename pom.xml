@@ -28,7 +28,7 @@
   </issueManagement>
 
   <properties>
-    <vertx.version>4.5.8</vertx.version>
+    <vertx.version>4.5.22</vertx.version>
     <j2html.version>1.4.0</j2html.version>
     <freelib.utils.version>4.0.5</freelib.utils.version>
     <freelib.maven.version>0.4.7</freelib.maven.version>
