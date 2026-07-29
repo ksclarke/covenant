@@ -22,10 +22,10 @@ import io.vertx.core.eventbus.MessageCodec;
  */
 public class SerializableCodec<T> implements MessageCodec<T, T> {
 
-    /* The codec's logger. */
+    /** The codec's logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger(SerializableCodec.class, MessageCodes.BUNDLE);
 
-    /* The name of the codec. */
+    /** The name of the codec. */
     private final String myCodecName;
 
     /**

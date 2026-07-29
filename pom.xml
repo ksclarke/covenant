@@ -28,17 +28,20 @@
   </issueManagement>
 
   <properties>
-    <vertx.version>4.5.27</vertx.version>
-    <j2html.version>1.4.0</j2html.version>
-    <freelib.utils.version>4.0.5</freelib.utils.version>
-    <freelib.maven.version>0.4.7</freelib.maven.version>
-    <slf4j.ext.version>2.0.13</slf4j.ext.version>
-    <snakeyaml.version>2.0</snakeyaml.version>
+    <vertx.version>4.5.31</vertx.version>
+    <j2html.version>1.6.0</j2html.version>
+    <freelib.utils.version>6.0.0</freelib.utils.version>
+    <slf4j.ext.version>2.0.18</slf4j.ext.version>
+    <snakeyaml.version>2.6</snakeyaml.version>
     <mapdb.version>3.1.0</mapdb.version>
+
+    <!-- Compile time annotations -->
+    <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
 
     <!-- Build plugin versions -->
     <vertx.plugin.version>1.0.23</vertx.plugin.version>
-    <codacy.plugin.version>1.2.0</codacy.plugin.version>
+    <freelib.maven.version>0.5.2</freelib.maven.version>
+    <freelib.resources.version>14.0.4</freelib.resources.version>
 
     <!-- Name of the main Vert.x verticle -->
     <main.verticle>info.freelibrary.ark.MainVerticle</main.verticle>
@@ -99,7 +102,7 @@
       <version>1.9.24</version>
     </dependency>
 
-    <!-- Below is a dependency that needs updating due to security issue (may be able to remove in future) -->
+    <!-- Below is a dependency that needs updating due to security issue (may be able to be removed in future) -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-ext</artifactId>
@@ -111,6 +114,14 @@
       <groupId>io.vertx</groupId>
       <artifactId>vertx-config</artifactId>
       <version>${vertx.version}</version>
+    </dependency>
+
+    <!-- Dependencies only used at compile time -->
+    <dependency>
+      <groupId>org.jetbrains</groupId>
+      <artifactId>annotations</artifactId>
+      <version>${jetbrains.annotations.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <!-- Below dependencies only used for testing -->
@@ -208,11 +219,6 @@
         <artifactId>maven-enforcer-plugin</artifactId>
       </plugin>
       <plugin>
-        <groupId>com.gavinmogan</groupId>
-        <artifactId>codacy-maven-plugin</artifactId>
-        <version>${codacy.plugin.version}</version>
-      </plugin>
-      <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
       </plugin>
       <plugin>
@@ -224,9 +230,15 @@
           <systemPropertyVariables>
             <vertx.logger-delegate-factory-class-name>io.vertx.core.logging.SLF4JLogDelegateFactory</vertx.logger-delegate-factory-class-name>
             <vertx-config-path>${project.basedir}/target/test-classes/test-config.properties</vertx-config-path>
+            <!--suppress UnresolvedMavenProperty -->
             <http.port>${http.port}</http.port>
           </systemPropertyVariables>
-          <argLine>${jacoco.agent.arg}</argLine>
+          <!--suppress UnresolvedMavenProperty -->
+          <argLine><![CDATA[
+            ${jacoco.agent.arg}
+            --sun-misc-unsafe-memory-access=allow
+            --enable-native-access=ALL-UNNAMED
+          ]]></argLine>
         </configuration>
       </plugin>
       <plugin>
@@ -261,7 +273,7 @@
   <parent>
     <artifactId>freelib-parent</artifactId>
     <groupId>info.freelibrary</groupId>
-    <version>8.0.9</version>
+    <version>14.0.4</version>
   </parent>
 
 </project>

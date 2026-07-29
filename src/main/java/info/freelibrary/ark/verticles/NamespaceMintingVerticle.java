@@ -3,6 +3,7 @@ package info.freelibrary.ark.verticles;
 
 import java.util.UUID;
 
+import info.freelibrary.util.warnings.PMD;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException;
@@ -29,16 +30,13 @@ import io.vertx.core.json.JsonObject;
  */
 public class NamespaceMintingVerticle extends AbstractVerticle {
 
-    /**
-     * The property that determines what type of action is needed.
-     */
+    /** The property that determines what type of action is needed. */
     public static final String ACTION = "covenant.minting.action";
 
-    /**
-     * The logger for the minting verticle.
-     */
+    /** The logger for the minting verticle. */
     private static final Logger LOGGER = LoggerFactory.getLogger(NamespaceMintingVerticle.class, MessageCodes.BUNDLE);
 
+    /** The database for storing minters. */
     private final DB myDb;
 
     /**
@@ -49,36 +47,35 @@ public class NamespaceMintingVerticle extends AbstractVerticle {
     }
 
     @Override
+    @SuppressWarnings(PMD.AVOID_CATCHING_GENERIC_EXCEPTION) // That's what Vert.x throws
     public void start(final Promise<Void> aPromise) {
         final EventBus eventBus;
 
         try {
             super.start();
 
-            // Get the Vert.x event bus
+            // Get the Vert.x event bus and register the codec we'll use for sharing minters
             eventBus = vertx.eventBus();
-
-            // Register the codec we'll use for sharing minters
             eventBus.registerDefaultCodec(NoidMinter.class, new SerializableCodec<>(NoidMinter.class));
 
             // Receive minting messages
-            eventBus.<NoidMinter>consumer(NamespaceMintingVerticle.class.getName(), request -> {
+            eventBus.<NoidMinter>consumer(getClass().getName(), request -> {
                 final NoidMinter minter = request.body();
 
                 try {
-                    switch (request.headers().get(NamespaceMintingVerticle.ACTION)) {
-                        case Op.MINT_NOID_NAMESPACE:
-                            mintNoidNamespace(minter, request);
-                            break;
-                        default:
-                            request.reply(new JsonObject());
+                    final String action = request.headers().get(ACTION);
+
+                    if (Op.MINT_NOID_NAMESPACE.equals(action)) {
+                        mintNoidNamespace(minter, request);
+                    } else {
+                        request.reply(new JsonObject());
                     }
                 } catch (final DBException details) {
                     LOGGER.error(details, details.getMessage());
                     request.fail(500, details.getMessage());
                 }
 
-                System.out.println("received " + minter.getNamespace());
+                LOGGER.info("Received minter namespace: " + minter.getNamespace());
             });
 
             aPromise.complete();
@@ -87,7 +84,14 @@ public class NamespaceMintingVerticle extends AbstractVerticle {
         }
     }
 
-    private void mintNoidNamespace(final NoidMinter aMinter, final Message<NoidMinter> aRequest) throws DBException {
+    /**
+     * Mints a Noid namespace.
+     *
+     * @param aMinter The Noid minter
+     * @param aRequest The request
+     * @throws DBException If there's a problem with the database
+     */
+    private void mintNoidNamespace(final NoidMinter aMinter, final Message<NoidMinter> aRequest) {
         final String collection = aMinter.getNamespace();
 
         if (!myDb.exists(collection)) {
@@ -97,13 +101,13 @@ public class NamespaceMintingVerticle extends AbstractVerticle {
 
             while (aMinter.hasNext()) {
                 final String noid = aMinter.next();
-                // LOGGER.debug(noid);
                 dbSink.put(noid, "");
             }
 
-            final BTreeMap<String, String> btree = dbSink.create();
+            try (BTreeMap<String, String> btree = dbSink.create()) {
+                LOGGER.debug("Db size: {} [{}]", btree.sizeLong(), timer.stop().getSeconds());
+            }
 
-            LOGGER.debug("Db size: {} [{}]", btree.sizeLong(), timer.stop().getSeconds());
             aRequest.reply("SUCCESS");
         } else {
             LOGGER.debug("db already exists");

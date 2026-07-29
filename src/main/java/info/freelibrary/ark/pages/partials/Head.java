@@ -3,14 +3,15 @@ package info.freelibrary.ark.pages.partials;
 
 import static j2html.TagCreator.*;
 
-import j2html.tags.ContainerTag;
 import j2html.tags.EmptyTag;
+import j2html.tags.specialized.HeadTag;
 
 /**
  * A page's head element.
  */
 public class Head {
 
+    /** The title for the head element. */
     private final String myTitle;
 
     /**
@@ -27,7 +28,7 @@ public class Head {
      *
      * @return The head element's tag
      */
-    public ContainerTag getTag() {
+    public HeadTag getTag() {
         final EmptyTag charset = meta();
         final EmptyTag viewport = meta();
         final EmptyTag stylesheet = link();

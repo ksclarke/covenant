@@ -1,96 +1,91 @@
 
 package info.freelibrary.ark.utils;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
+import info.freelibrary.ark.Config;
+import info.freelibrary.ark.MessageCodes;
+import info.freelibrary.ark.NoidType;
+import info.freelibrary.util.I18nRuntimeException;
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
+import info.freelibrary.util.Stopwatch;
+import info.freelibrary.util.warnings.PMD;
+import io.netty.util.internal.ThreadLocalRandom;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.io.Serial;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.text.NumberFormat;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-
-import info.freelibrary.util.I18nRuntimeException;
-import info.freelibrary.util.Logger;
-import info.freelibrary.util.LoggerFactory;
-import info.freelibrary.util.Stopwatch;
-
-import info.freelibrary.ark.Config;
-import info.freelibrary.ark.MessageCodes;
-import info.freelibrary.ark.NoidType;
-
-import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * A NOID minter that randomizes its NOIDs.
  * <p>
  * To randomize, the minter first writes all possible NOIDs to an array file (which might take some time, depending on
- * NOID type and length) and then uses a modified LCG algorithm found at https://stackoverflow.com/a/29158495/171452 to
- * iterate over all possible indices. For each index position, the minter reads the NOID associated with that index
- * position from the file. If a shoulder and checksum are desired, these are added to the NOID before it is returned by
- * the minter.
+ * NOID type and length) and then uses a modified <a href="https://stackoverflow.com/a/29158495/171452">LCG
+ * algorithm</a> to iterate over all possible indices. For each index position, the minter reads the NOID associated
+ * with that index position from the file. If a shoulder and checksum are desired, these are added to the NOID before it
+ * is returned by the minter.
  * </p>
  */
-public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>, Serializable, AutoCloseable {
+public class RandomizedNoidMinter extends NoidMinter implements Serializable, AutoCloseable {
 
-    /* The logger for RandomizedNoidMinter. */
+    /** The logger for RandomizedNoidMinter. */
     private static final Logger LOGGER = LoggerFactory.getLogger(RandomizedNoidMinter.class, MessageCodes.BUNDLE);
 
-    /* The <code>serialVersionUID</code> for RandomizedNoidMinter. */
-    private static final long serialVersionUID = 2138657523643562090L;
+    /** The <code>serialVersionUID</code> for RandomizedNoidMinter. */
+    @Serial
+    private static final long serialVersionUID = 2_138_657_523_643_562_090L;
 
-    /* The linear congruential generator (LCG) increment (often referred to as 'c'). */
-    private static final int DEFAULT_INCREMENT = 1013904223;
+    /** The linear congruential generator (LCG) increment (often referred to as 'c'). */
+    private static final int DEFAULT_INCREMENT = 1_013_904_223;
 
-    /* The LCG multiplier (often referred to as 'a'). */
-    private static final int DEFAULT_MULTIPLIER = 1664525;
+    /** The LCG multiplier (often referred to as 'a'). */
+    private static final int DEFAULT_MULTIPLIER = 1_664_525;
 
-    /* The byte buffer into which NOIDs are read. */
+    /** The byte buffer into which NOIDs are read. */
     private final ByteBuffer myByteBuffer;
 
-    /* The unique name for this minter. */
-    private final String myMinterType;
-
-    /* The total number of possible NOIDs for this minter. */
+    /** The total number of possible NOIDs for this minter. */
     private final long myTotalNoidCount;
 
-    /* The length of NOIDs in the NAF. */
+    /** The length of NOIDs in the NAF. */
     private final int myNoidLength;
 
-    /* The key file associated with this minter type. */
+    /** The key file associated with this minter type. */
     private final Path myKeyFile;
 
-    /* The LCG modulus (often referred to as 'm'). */
+    /** The LCG modulus (often referred to as 'm'). */
     private final long myModulus;
 
-    /* The NOID array file. */
+    /** The LCG seed. */
+    private final long mySeed;
+
+    /** The NOID array file. */
     private AsynchronousFileChannel myNAF;
 
-    /* If the minter has a next NOID. */
+    /** If the minter has a next NOID. */
     private boolean hasNextNOID = true;
 
-    /* The next value in the LCG sequence. */
+    /** The next value in the LCG sequence. */
     private long myIndex;
-
-    /* The LCG seed. */
-    private long mySeed;
 
     /**
      * Creates a new randomized NOID minter.
      *
-     * @param aNamespace A namespace (i.e. name) for the newly created minter
+     * @param aNamespace A namespace for the newly created minter
      * @param aNoidType A type of NOID to be minted
      * @param aNoidLength The length of NOIDs to be minted (minus shoulder and checksum character)
      * @throws IOException If there is trouble reading or writing NOIDs from a random access file
@@ -103,7 +98,7 @@ public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>
     /**
      * Creates a new randomized NOID minter.
      *
-     * @param aNamespace A namespace (i.e. name) for the newly created minter
+     * @param aNamespace A namespace for the newly created minter
      * @param aNoidType A type of NOID to be minted
      * @param aNoidLength The length of NOIDs to be minted (minus shoulder and checksum character)
      * @param aChecksumRequired True if a checksum should be generated; else, false
@@ -117,9 +112,9 @@ public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>
     /**
      * Creates a new randomized NOID minter.
      *
-     * @param aNamespace A namespace (i.e. name) for the newly created minter
+     * @param aNamespace A namespace for the newly created minter
      * @param aNoidType A type of NOID to be minted
-     * @param aShoulder A shoulder (i.e. prefix) for the minted NOID
+     * @param aShoulder A shoulder for the minted NOID
      * @param aNoidLength The length of NOIDs to be minted (minus shoulder and checksum character)
      * @throws IOException If there is trouble reading or writing NOIDs from a random access file
      */
@@ -131,19 +126,20 @@ public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>
     /**
      * Creates a new randomized NOID minter.
      *
-     * @param aNamespace A namespace (i.e. name) for the newly created minter
+     * @param aNamespace A namespace for the newly created minter
      * @param aNoidType A type of NOID to be minted
-     * @param aShoulder A shoulder (i.e. prefix) for the minted NOID
+     * @param aShoulder A shoulder for the minted NOID
      * @param aNoidLength The length of NOIDs to be minted (minus shoulder and checksum character)
      * @param aChecksumRequired Whether the NOID should have a checksum character at the end
      * @throws IOException If there is trouble reading or writing NOIDs from a random access file
+     * @throws IllegalArgumentException If there was a request for more NOIDs than are possible
      */
     public RandomizedNoidMinter(final String aNamespace, final NoidType aNoidType, final String aShoulder,
             final int aNoidLength, final boolean aChecksumRequired) throws IOException {
         super(aNamespace, aNoidType, null, aNoidLength, false);
 
-        // The unique name for this minter type
-        myMinterType = aNoidType.toString() + '-' + aNoidLength;
+        // The unique name for this minter
+        final String minterName = aNoidType.toString() + '-' + aNoidLength;
 
         // The length of NOIDs generated by this minter
         myNoidLength = aNoidLength;
@@ -157,11 +153,11 @@ public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>
         }
 
         // The .naf extension is for our "NOID array file" format; it's just a fixed size array of bare NOIDs
-        myKeyFile = Paths.get(getDbFilesDir(), myMinterType + ".naf");
+        myKeyFile = Paths.get(getDbFilesDir(), minterName + ".naf");
 
-        // If key file does not already exist, create it; this may take awhile, depending on NOID type/length
+        // If key file does not already exist, create it; this may take a while, depending on NOID type/length
         if (!myKeyFile.toFile().exists()) {
-            createKeyFile(aNoidType, aNoidLength);
+            createKeyFile(aNoidLength);
         }
 
         // Create a byte buffer for NOIDs we read from the NAF
@@ -232,29 +228,34 @@ public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>
      * Gets a NOID from the NAF.
      *
      * @param aIndex An index position to use when retrieving a NOID from the NAF
-     * @param aByteBuffer A byte buffer into which to write the NOID
      * @return The requested NOID
-     * @throws NoSuchElementException If there isn't an NOID available
+     * @throws NoSuchElementException If the requested NOID isn't available
+     * @throws I18nRuntimeException If there is trouble executing the retrieval
      */
-    private String getNoidFromNAF(final long aIndex) throws NoSuchElementException {
+    @SuppressWarnings({ PMD.CYCLOMATIC_COMPLEXITY })
+    private String getNoidFromNAF(final long aIndex) {
         try {
+            final int bytesRead;
+
             if (myNAF == null || !myNAF.isOpen()) {
                 myNAF = AsynchronousFileChannel.open(myKeyFile, StandardOpenOption.READ);
             }
 
-            if (myNAF.read(myByteBuffer.clear(), aIndex * myNoidLength).get().equals(myNoidLength)) {
+            bytesRead = myNAF.read(myByteBuffer.clear(), aIndex * myNoidLength).get();
+
+            if (bytesRead == myNoidLength) {
                 return mint(new String(myByteBuffer.array(), StandardCharsets.UTF_8));
             } else {
-                final String executionExceptionMessage = LOGGER.getMessage(MessageCodes.ARK_023, myKeyFile);
-                final String ioExceptionMessage = LOGGER.getMessage(MessageCodes.ARK_024, aIndex);
-
-                throw new ExecutionException(executionExceptionMessage, new IOException(ioExceptionMessage));
+                final IOException cause = new IOException(LOGGER.getMessage(MessageCodes.ARK_024, aIndex));
+                throw new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_023), cause);
             }
-        } catch (final ExecutionException | InterruptedException details) {
+        } catch (final InterruptedException details) {
+            Thread.currentThread().interrupt();
+            throw new I18nRuntimeException(details);
+        } catch (final ExecutionException details) {
             throw new I18nRuntimeException(details);
         } catch (final IOException details) {
-            LOGGER.error(details, details.getMessage());
-            throw new NoSuchElementException(details.getMessage());
+            throw new NoSuchElementException(details.getMessage(), details);
         }
     }
 
@@ -270,31 +271,26 @@ public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>
 
         if (dbDirEnvProperty == null && dbDirSysProperty == null) {
             return System.getProperty("java.io.tmpdir");
-        } else if (dbDirEnvProperty != null) {
-            return dbDirEnvProperty;
         } else {
-            return dbDirSysProperty;
+            return Objects.requireNonNullElse(dbDirEnvProperty, dbDirSysProperty);
         }
     }
 
     /**
-     * Creates a key file for our randomized minter. Keeping billions of NOIDs in memory isn't great, but to randomize
-     * them without doing that we'll need something to iterate over. This method writes a NAF (NOID array) file to disk
+     * Creates a key file for our randomized minter. Keeping billions of NOIDs in memory isn't great, but, to randomize
+     * them without doing that, we'll need something to iterate over. This method writes a NAF (NOID array file) to disk
      * so that we can use that to iterate over base NOID values, adding a requested shoulder and/or checksum as needed.
      *
-     * @param aNoidType The type of NOIDs in this key file
      * @param aNoidLength A length of NOIDs in this key file
      * @throws FileNotFoundException If the path to the supplied file cannot be found
      * @throws IOException If there is trouble reading or writing to the key file
      */
-    private void createKeyFile(final NoidType aNoidType, final int aNoidLength)
-            throws FileNotFoundException, IOException {
+    private void createKeyFile(final int aNoidLength) throws FileNotFoundException, IOException {
         try (RandomAccessFile file = new RandomAccessFile(myKeyFile.toFile(), "rw");
                 FileChannel fileChannel = file.getChannel()) {
             final NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
-            final long totalBytes = aNoidLength * myTotalNoidCount;
             final String totalNoidCount = formatter.format(myTotalNoidCount);
-            final FileLock fileChannelLock = fileChannel.lock();
+            final long totalBytes = aNoidLength * myTotalNoidCount;
             final int iterationByteCount;
             final int iterationCount;
             final Stopwatch timer;
@@ -320,14 +316,11 @@ public class RandomizedNoidMinter extends NoidMinter implements Iterator<String>
 
                 for (int byteCount = iterationByteCount; hasMoreBytes(byteCount); byteCount -= aNoidLength) {
                     startIndex += aNoidLength;
-                    byteBuffer.put(UTF_8.encode(super.next()));
+                    byteBuffer.put(StandardCharsets.UTF_8.encode(super.next()));
                 }
             }
 
             fileChannel.truncate(startIndex);
-            fileChannelLock.release();
-            fileChannel.close();
-
             LOGGER.info(MessageCodes.ARK_020, totalNoidCount, myKeyFile, timer.stop().getSeconds());
         }
     }

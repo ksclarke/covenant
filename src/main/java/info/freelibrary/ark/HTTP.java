@@ -2,44 +2,45 @@
 package info.freelibrary.ark;
 
 /**
- * A set of HTTP related constants.
+ * A set of HTTP-related constants.
  */
 public final class HTTP {
 
-    /** Success response */
+    /** Success response. */
     public static final int OK = 200;
 
-    /** Created response */
+    /** Created response. */
     public static final int CREATED = 201;
 
-    /** Success, no content */
+    /** Success, no content. */
     public static final int NO_CONTENT = 204;
 
-    /** Temporary redirect */
+    /** Temporary redirect. */
     public static final int TEMP_REDIRECT = 307;
 
-    /** Too many requests */
+    /** Too many requests. */
     public static final int TOO_MANY_REQUESTS = 429;
 
-    /** Not found response */
+    /** Not found response. */
     public static final int NOT_FOUND = 404;
 
-    /** Method not allowed */
+    /** Method is not allowed. */
     public static final int METHOD_NOT_ALLOWED = 405;
 
-    /** An empty or other unsupported media type */
+    /** An empty or other unsupported media type. */
     public static final int UNSUPPORTED_MEDIA_TYPE = 415;
 
-    /** Generic internal server error */
+    /** Generic internal server error. */
     public static final int INTERNAL_SERVER_ERROR = 500;
 
-    /** Bad request */
+    /** Bad request. */
     public static final int BAD_REQUEST = 400;
 
     /**
-     * A private constructor for the constants class.
+     * A private constructor for the class.
      */
     private HTTP() {
+        // This is intentionally left empty
     }
 
     /**
@@ -56,6 +57,7 @@ public final class HTTP {
          * Constructors for constant classes should be private.
          */
         private Response() {
+            // This is intentionally left empty
         }
     }
 }

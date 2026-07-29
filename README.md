@@ -1,4 +1,5 @@
-# Covenant <br>[![Project Status: Concept – Minimal or no implementation has been done yet.](https://www.repostatus.org/badges/latest/concept.svg)](https://www.repostatus.org/#concept)
+# Covenant
+[![Project Status: Concept – Minimal or no implementation has been done yet.](https://www.repostatus.org/badges/latest/concept.svg)](https://www.repostatus.org/#concept)
 
 Covenant is a nascent [Archival Resource Key (ARK)](https://arks.org/) minter and resolver built with the [Vert.x](https://vertx.io/) toolkit.
 

@@ -12,6 +12,7 @@
 
   <rule ref="category/java/bestpractices.xml">
     <exclude name="GuardLogStatement" />
+    <exclude name="LooseCoupling" />
   </rule>
   <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod">
     <properties>
@@ -31,8 +32,8 @@
     <exclude name="CallSuperInConstructor" /> <!-- Default super is handled by default -->
     <exclude name="ConfusingTernary" /> <!-- It makes more sense to ask if something isn't null, IMHO -->
     <exclude name="PrematureDeclaration" /> <!-- Sometimes useful, but more often than not a false positive -->
-    <exclude name="AtLeastOneConstructor" />
-    <exclude name="CommentDefaultAccessModifier" />
+    <exclude name="UnnecessaryConstructor" /> <!-- Javadocs requires even default constructors to have docs -->
+    <exclude name="AtLeastOneConstructor" /> <!-- Non-public classes can have default constructors -->
   </rule>
   <rule ref="category/java/codestyle.xml/ClassNamingConventions">
     <properties>
@@ -74,13 +75,12 @@
   </rule>
 
   <rule ref="category/java/design.xml">
+    <exclude name="PublicMemberInNonPublicType" />
     <exclude name="LawOfDemeter" />
     <exclude name="LoosePackageCoupling" />
-    <exclude name="UselessOverridingMethod" />
     <exclude name="SimplifyBooleanReturns" />
     <exclude name="DataClass" />
   </rule>
-
   <rule ref="category/java/design.xml/TooManyMethods">
     <properties>
       <property name="maxmethods" value="20" />
@@ -98,6 +98,7 @@
   <rule ref="category/java/errorprone.xml">
     <exclude name="AssignmentInOperand" />
     <exclude name="InvalidLogMessageFormat" />
+    <exclude name="MissingStaticMethodInNonInstantiatableClass" />
   </rule>
 
   <rule ref="category/java/performance.xml">

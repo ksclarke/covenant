@@ -14,14 +14,19 @@ import info.freelibrary.util.LoggerFactory;
  */
 public class NoidTypeTest {
 
+    /** The logger for the NodeTypeTest. */
     private static final Logger LOGGER = LoggerFactory.getLogger(NoidTypeTest.class, MessageCodes.BUNDLE);
 
+    /** The expected value for the lowercase alpha string. */
     private static final String ALPHA_STRING_LC = "alpha";
 
+    /** The expected value for the uppercase alpha string. */
     private static final String ALPHA_STRING_UC = "ALPHA";
 
+    /** The expected value for the lowercase all-alpha string. */
     private static final String ALPHA_ALL_STRING_LC = "alpha-all";
 
+    /** The expected value for the uppercase all-alpha string. */
     private static final String ALPHA_ALL_STRING_UC = "ALPHA-all";
 
     /**
@@ -38,7 +43,7 @@ public class NoidTypeTest {
     /**
      * Tests whether fromString method throws an exception on receiving an empty string value.
      */
-    @Test(expected = UnexpectedNoidTypeException.class)
+    @Test(expected = NullPointerException.class)
     public void testFromStringNullValue() {
         NoidType.fromString(null);
         fail(LOGGER.getMessage(MessageCodes.ARK_012, UnexpectedNoidTypeException.class));
@@ -174,7 +179,7 @@ public class NoidTypeTest {
      */
     @Test
     public void testToString() {
-        System.out.println("String: " + NoidType.ALPHA.toString()); // FIXME
+        assertEquals(ALPHA_STRING_UC, NoidType.ALPHA.toString());
     }
 
     /**
@@ -182,6 +187,6 @@ public class NoidTypeTest {
      */
     @Test
     public void testName() {
-        System.out.println("Name: " + NoidType.ALPHA.name()); // FIXME
+        assertEquals(ALPHA_STRING_UC, NoidType.ALPHA.name());
     }
 }

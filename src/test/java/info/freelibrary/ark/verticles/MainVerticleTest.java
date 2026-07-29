@@ -1,6 +1,8 @@
 
 package info.freelibrary.ark.verticles;
 
+import static info.freelibrary.util.Constants.SLASH;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -9,7 +11,6 @@ import info.freelibrary.util.LoggerFactory;
 
 import info.freelibrary.ark.AbstractTest;
 import info.freelibrary.ark.Config;
-import info.freelibrary.ark.Constants;
 import info.freelibrary.ark.HTTP;
 import info.freelibrary.ark.MessageCodes;
 
@@ -42,7 +43,7 @@ public class MainVerticleTest extends AbstractTest {
         final int port = aContext.get(Config.HTTP_PORT);
         final Async asyncTask = aContext.async();
 
-        client.get(port, HOST, Constants.SLASH).send(get -> {
+        client.get(port, HOST, SLASH).send(get -> {
             if (get.succeeded()) {
                 final HttpResponse<Buffer> response = get.result();
 
