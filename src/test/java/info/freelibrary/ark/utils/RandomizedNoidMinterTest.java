@@ -1,6 +1,3 @@
-/**
- *
- */
 
 package info.freelibrary.ark.utils;
 
@@ -29,19 +26,17 @@ import info.freelibrary.ark.NoidType;
  */
 public class RandomizedNoidMinterTest {
 
-    /* The logger used by these tests. */
+    /** The logger used by these tests. */
     private static final Logger LOGGER = LoggerFactory.getLogger(RandomizedNoidMinterTest.class, MessageCodes.BUNDLE);
 
-    /* The location of the JVM's temporary directory. */
+    /** The location of the JVM's temporary directory. */
     private static final File TMP_DIR = new File(System.getProperty("java.io.tmpdir"));
 
-    /* A convenient hook into the test that's running. */
+    /** A convenient hook into the test that's running. */
     @Rule
     public TestName myTestName = new TestName();
 
-    /**
-     * The namespace of the test minter.
-     */
+    /** The namespace of the test minter. */
     private String myNamespace;
 
     /**

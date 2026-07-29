@@ -2,22 +2,25 @@
 package info.freelibrary.ark.pages.partials;
 
 import j2html.TagCreator;
-import j2html.tags.ContainerTag;
+import j2html.tags.specialized.FooterTag;
+import j2html.tags.specialized.ScriptTag;
 
 /**
  * A page footer element.
  */
 public class Footer {
 
+    /** A source attribute. */
     private static final String SRC = "src";
 
+    /** An integrity attribute. */
     private static final String INTEGRITY = "integrity";
 
     /**
      * Creates a new page footer.
      */
     public Footer() {
-
+        // This is intentionally left empty
     }
 
     /**
@@ -25,13 +28,12 @@ public class Footer {
      *
      * @return The page footer tag
      */
-    public ContainerTag getTag() {
-        final ContainerTag jquery = TagCreator.script();
-        final ContainerTag popper = TagCreator.script();
-        final ContainerTag bootstrap = TagCreator.script();
+    public FooterTag getTag() {
+        final ScriptTag jquery = TagCreator.script();
+        final ScriptTag popper = TagCreator.script();
+        final ScriptTag bootstrap = TagCreator.script();
         final AnonCrossOrigin crossOrigin = new AnonCrossOrigin();
 
-        // JQuery Javascript
         jquery.attr(SRC, "https://code.jquery.com/jquery-3.3.1.slim.min.js");
         jquery.attr(INTEGRITY, "sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo");
         jquery.attr(crossOrigin);

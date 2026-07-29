@@ -28,20 +28,14 @@ import io.vertx.ext.unit.junit.VertxUnitRunner;
 @RunWith(VertxUnitRunner.class)
 public abstract class AbstractTest {
 
-    /**
-     * The host used for testing.
-     */
+    /** The host used for testing. */
     protected static final String HOST = "0.0.0.0";
 
-    /**
-     * A view into the test that's being run.
-     */
+    /** A view into the test that's being run. */
     @Rule
     public TestName myTestName = new TestName();
 
-    /**
-     * The test context, from which the Vert.x instance can be retrieved
-     */
+    /** The test context, from which the Vert.x instance can be retrieved. */
     @Rule
     public RunTestOnContext myTestContext = new RunTestOnContext();
 
@@ -113,6 +107,7 @@ public abstract class AbstractTest {
      * Gets an available port.
      *
      * @return An available port
+     * @throws IOException If there isn't an available port
      */
     private int getAvailablePort() throws IOException {
         try (ServerSocket socket = new ServerSocket(0)) {

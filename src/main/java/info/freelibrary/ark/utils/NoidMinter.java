@@ -4,6 +4,7 @@ package info.freelibrary.ark.utils;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,32 +25,41 @@ import info.freelibrary.ark.NoidType;
  */
 public class NoidMinter implements Iterator<String>, Serializable {
 
+    /** The logger for NoidMinter. */
     private static final Logger LOGGER = LoggerFactory.getLogger(NoidMinter.class, MessageCodes.BUNDLE);
 
-    // We warn if a shoulder doesn't adhere to the "First Digit" convention.
+    /** We warn if a shoulder doesn't adhere to the "First Digit" convention. */
     private static final Pattern FIRST_DIGIT_PATTERN = Pattern.compile("^[a-zA-Z]+[0-9]$");
 
-    /**
-     * The <code>serialVersionUID</code> for NoidMinter.
-     */
+    /** The <code>serialVersionUID</code> for NoidMinter. */
+    @Serial
     private static final long serialVersionUID = -3059924955130497273L;
 
+    /** Whether the NOIDs minted have checksums. */
     protected boolean hasChecksums;
 
+    /** The shoulder for the NOIDs minted. */
     protected String myShoulder;
 
+    /** The characters available for constructing NOIDs of this minter's configured type. */
     private final List<Character> myCharacters;
 
+    /** The character values that make up the current bare NOID before shoulder or checksum processing. */
     private final List<Character> myCurrentNoidChars;
 
+    /** The length of the bare NOIDs minted, excluding any shoulder or checksum character. */
     private final int myNoidLength;
 
+    /** The internal counter array used to track the current position in the NOID character space. */
     private final int[] myBitArray;
 
+    /** The configured NOID type that determines the characters used by this minter. */
     private final NoidType myNoidType;
 
+    /** The namespace associated with this minter. */
     private final String myNamespace;
 
+    /** The number of NOIDs minted by this minter. */
     private long myIndex;
 
     /**
@@ -92,7 +102,7 @@ public class NoidMinter implements Iterator<String>, Serializable {
         checkNotNull(aNamespace, LOGGER.getMessage(MessageCodes.ARK_018));
 
         myCharacters = Arrays.asList(aNoidType.getCharacters());
-        myCurrentNoidChars = new ArrayList<>(Collections.nCopies(aNoidLength, myCharacters.get(0)));
+        myCurrentNoidChars = new ArrayList<>(Collections.nCopies(aNoidLength, myCharacters.getFirst()));
         myBitArray = new int[aNoidLength + 2];
         hasChecksums = aChecksumRequired;
         myNoidLength = aNoidLength;
@@ -114,7 +124,7 @@ public class NoidMinter implements Iterator<String>, Serializable {
 
     /**
      * Gets a batch of NOIDs. It's possible that there aren't enough NOIDs left to satisfy the request; in this case,
-     * the amount of NOIDs that can be returned are. The caller is responsible for checking the list size to confirm the
+     * the number of NOIDs that can be returned is. The caller is responsible for checking the list size to confirm the
      * number of returned NOIDs.
      *
      * @param aCount A requested number of NOIDs
@@ -155,7 +165,7 @@ public class NoidMinter implements Iterator<String>, Serializable {
                 myBitArray[bitIndex] = 0;
             } else {
                 myBitArray[myNoidLength] = 1;
-                myCurrentNoidChars.forEach(character -> builder.append(character));
+                myCurrentNoidChars.forEach(builder::append);
 
                 // Reverse the string so NOIDs can be sorted in ascending order
                 return mint(builder.reverse().toString());
@@ -165,7 +175,7 @@ public class NoidMinter implements Iterator<String>, Serializable {
         }
 
         myBitArray[bitIndex]++;
-        myCurrentNoidChars.forEach(character -> builder.append(character));
+        myCurrentNoidChars.forEach(builder::append);
 
         // Reverse the string so NOIDs can be sorted in ascending order
         return mint(builder.reverse().toString());
@@ -213,8 +223,6 @@ public class NoidMinter implements Iterator<String>, Serializable {
      * Returns a newly minted NOID.
      *
      * @param aNOID A basic NOID string (without checksum or shoulder)
-     * @param aShoulder A NOID shoulder
-     * @param aChecksumRequired True if a checksum is desired; else, false
      * @return A newly minted NOID
      */
     protected String mint(final String aNOID) {

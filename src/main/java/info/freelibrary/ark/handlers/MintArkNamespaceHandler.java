@@ -1,6 +1,9 @@
 
 package info.freelibrary.ark.handlers;
 
+import info.freelibrary.ark.MessageCodes;
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
@@ -10,6 +13,9 @@ import io.vertx.ext.web.RoutingContext;
  * A mint ARK namespace handler.
  */
 public class MintArkNamespaceHandler implements Handler<RoutingContext> {
+
+    /** The logger for MintArkNamespaceHandler. */
+    private static final Logger LOGGER = LoggerFactory.getLogger(MintArkNamespaceHandler.class, MessageCodes.BUNDLE);
 
     /**
      * The handler's copy of the Vert.x instance.
@@ -29,6 +35,8 @@ public class MintArkNamespaceHandler implements Handler<RoutingContext> {
     public void handle(final RoutingContext aContext) {
         final MultiMap params = aContext.queryParams();
 
+        LOGGER.debug(params.get("noid"));
+        myVertx.eventBus().send("placeholder", params);
     }
 
 }

@@ -101,7 +101,7 @@ public class MintNoidNamespaceHandler implements Handler<RoutingContext> {
      * @return The length of the identifier
      * @throws NumberFormatException If the supplied string value isn't a valid length
      */
-    private int getLength(final String aLength) throws NumberFormatException {
+    private int getLength(final String aLength) {
         final int length;
 
         if (StringUtils.trimToNull(aLength) == null || (length = Integer.parseInt(aLength)) == 0) {
@@ -119,11 +119,6 @@ public class MintNoidNamespaceHandler implements Handler<RoutingContext> {
      */
     private boolean getChecksumsRequirement(final String aChecksumsReqFlag) {
         final String checksumsRequired = StringUtils.trimToNull(aChecksumsReqFlag);
-
-        if ("true".equalsIgnoreCase(checksumsRequired)) {
-            return true;
-        }
-
-        return false;
+        return Boolean.TRUE.toString().equalsIgnoreCase(checksumsRequired);
     }
 }

@@ -4,24 +4,21 @@ package info.freelibrary.ark.utils;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
-import java.util.List;
-
+import info.freelibrary.ark.NoidType;
 import org.junit.Test;
 
-import info.freelibrary.ark.NoidType;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Tests of the checksum utilities.
  */
 public class ChecksumUtilsTest {
 
-    // Our test data.
-    private final List<TestData> myTestData = Arrays.asList( //
-            new TestData(NoidType.NUMERIC, "9485900", '6'), //
-            new TestData(NoidType.ALPHA, "awjdkjo", 'c'), //
-            new TestData(NoidType.ALPHA_ALL, "aWjDkJo", 'w'), //
-            new TestData(NoidType.ALPHANUMERIC, "e9f0rt9", '9'), //
+    /** Our test data. */
+    private final List<TestData> myTestData = Arrays.asList(new TestData(NoidType.NUMERIC, "9485900", '6'),
+            new TestData(NoidType.ALPHA, "awjdkjo", 'c'), new TestData(NoidType.ALPHA_ALL, "aWjDkJo", 'w'),
+            new TestData(NoidType.ALPHANUMERIC, "e9f0rt9", '9'),
             new TestData(NoidType.ALPHANUMERIC_ALL, "e9F0rt9", '8'));
 
     /**
@@ -57,7 +54,7 @@ public class ChecksumUtilsTest {
     /**
      * Data used for testing the checksum utilities.
      */
-    private final class TestData {
+    private static final class TestData {
 
         /**
          * A NOID type.
