@@ -28,7 +28,7 @@
   </issueManagement>
 
   <properties>
-    <vertx.version>4.5.31</vertx.version>
+    <vertx.version>5.1.5</vertx.version>
     <j2html.version>1.6.0</j2html.version>
     <freelib.utils.version>6.0.0</freelib.utils.version>
     <slf4j.ext.version>2.0.18</slf4j.ext.version>
@@ -39,13 +39,33 @@
     <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
 
     <!-- Build plugin versions -->
-    <vertx.plugin.version>1.0.23</vertx.plugin.version>
+    <vertx.plugin.version>2.1.0</vertx.plugin.version>
     <freelib.maven.version>0.5.2</freelib.maven.version>
-    <freelib.resources.version>14.0.4</freelib.resources.version>
+
+    <!-- Security overrides -->
+    <kotlin.version>1.9.24</kotlin.version>
+    <lz4.version>1.11.2</lz4.version>
 
     <!-- Name of the main Vert.x verticle -->
     <main.verticle>info.freelibrary.ark.MainVerticle</main.verticle>
   </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Pins a specific version instead of the default SNAPSHOT version mapdb uses -->
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-stdlib</artifactId>
+        <version>${kotlin.version}</version>
+      </dependency>
+      <!-- This fork updates the lz4 transitive mapdb dependency with security fixes -->
+      <dependency>
+        <groupId>at.yawk.lz4</groupId>
+        <artifactId>lz4-java</artifactId>
+        <version>${lz4.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
@@ -75,7 +95,12 @@
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-web-openapi</artifactId>
+      <artifactId>vertx-launcher-application</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web-openapi-router</artifactId>
       <version>${vertx.version}</version>
     </dependency>
     <dependency>
@@ -88,18 +113,17 @@
       <artifactId>mapdb</artifactId>
       <version>${mapdb.version}</version>
       <exclusions>
+        <!-- This is replaced by the lz4-java fork, below, which has security fixes -->
         <exclusion>
-          <groupId>org.jetbrains.kotlin</groupId>
-          <artifactId>kotlin-stdlib</artifactId>
+          <groupId>net.jpountz.lz4</groupId>
+          <artifactId>lz4</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
-
-    <!-- MapDB uses a snapshot dependency, but we want a pinned version -->
+    <!-- A fork that updates jpountz's lz4 library (used by mapdb) -->
     <dependency>
-      <groupId>org.jetbrains.kotlin</groupId>
-      <artifactId>kotlin-stdlib</artifactId>
-      <version>1.9.24</version>
+      <groupId>at.yawk.lz4</groupId>
+      <artifactId>lz4-java</artifactId>
     </dependency>
 
     <!-- Below is a dependency that needs updating due to security issue (may be able to be removed in future) -->
@@ -183,7 +207,7 @@
           <dependency>
             <groupId>info.freelibrary</groupId>
             <artifactId>freelib-resources</artifactId>
-            <version>${freelib.resources.version}</version>
+            <version>${project.parent.version}</version>
           </dependency>
         </dependencies>
         <configuration>
@@ -273,7 +297,7 @@
   <parent>
     <artifactId>freelib-parent</artifactId>
     <groupId>info.freelibrary</groupId>
-    <version>14.0.4</version>
+    <version>14.0.6</version>
   </parent>
 
 </project>

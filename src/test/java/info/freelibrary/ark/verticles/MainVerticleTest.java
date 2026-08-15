@@ -3,28 +3,21 @@ package info.freelibrary.ark.verticles;
 
 import static info.freelibrary.util.Constants.SLASH;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import info.freelibrary.util.Logger;
-import info.freelibrary.util.LoggerFactory;
-
 import info.freelibrary.ark.AbstractTest;
 import info.freelibrary.ark.Config;
 import info.freelibrary.ark.HTTP;
 import info.freelibrary.ark.MessageCodes;
-
-import io.vertx.core.buffer.Buffer;
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
 
 /**
  * Tests the main verticle of the covenant application.
  */
-@RunWith(VertxUnitRunner.class)
 public class MainVerticleTest extends AbstractTest {
 
     /**
@@ -38,20 +31,14 @@ public class MainVerticleTest extends AbstractTest {
      * @param aContext A test context
      */
     @Test
-    public void testThatTheServerIsStarted(final TestContext aContext) {
+    public void testThatTheServerIsStarted(@NotNull final TestContext aContext) {
         final WebClient client = WebClient.create(myTestContext.vertx());
         final int port = aContext.get(Config.HTTP_PORT);
         final Async asyncTask = aContext.async();
 
-        client.get(port, HOST, SLASH).send(get -> {
-            if (get.succeeded()) {
-                final HttpResponse<Buffer> response = get.result();
-
-                aContext.assertEquals(HTTP.OK, response.statusCode());
-                complete(asyncTask);
-            } else {
-                aContext.fail(get.cause());
-            }
+        client.get(port, HOST, SLASH).send().onFailure(aContext::fail).onSuccess(response -> {
+            aContext.assertEquals(HTTP.OK, response.statusCode());
+            complete(asyncTask);
         });
     }
 

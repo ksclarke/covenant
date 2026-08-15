@@ -4,6 +4,9 @@ package info.freelibrary.ark.verticles;
 import java.util.UUID;
 
 import info.freelibrary.util.warnings.PMD;
+import io.vertx.core.Future;
+import io.vertx.core.VerticleBase;
+import org.jetbrains.annotations.NotNull;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException;
@@ -16,10 +19,9 @@ import info.freelibrary.util.Stopwatch;
 
 import info.freelibrary.ark.MessageCodes;
 import info.freelibrary.ark.Op;
-import info.freelibrary.ark.utils.NoidMinter;
+import info.freelibrary.ark.NoidMinter;
 import info.freelibrary.ark.utils.SerializableCodec;
 
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -28,10 +30,13 @@ import io.vertx.core.json.JsonObject;
 /**
  * A verticle that mints new NOIDs, ARKs, and their namespaces.
  */
-public class NamespaceMintingVerticle extends AbstractVerticle {
+public class NamespaceMintingVerticle extends VerticleBase {
 
     /** The property that determines what type of action is needed. */
     public static final String ACTION = "covenant.minting.action";
+
+    /** The number of IDs to mint in a batch. */
+    private static final int MINT_BATCH_SIZE = 1000;
 
     /** The logger for the minting verticle. */
     private static final Logger LOGGER = LoggerFactory.getLogger(NamespaceMintingVerticle.class, MessageCodes.BUNDLE);
@@ -47,8 +52,10 @@ public class NamespaceMintingVerticle extends AbstractVerticle {
     }
 
     @Override
+    @NotNull
     @SuppressWarnings(PMD.AVOID_CATCHING_GENERIC_EXCEPTION) // That's what Vert.x throws
-    public void start(final Promise<Void> aPromise) {
+    public Future<Void> start() {
+        final Promise<Void> promise = Promise.promise();
         final EventBus eventBus;
 
         try {
@@ -78,10 +85,12 @@ public class NamespaceMintingVerticle extends AbstractVerticle {
                 LOGGER.info("Received minter namespace: " + minter.getNamespace());
             });
 
-            aPromise.complete();
+            promise.complete();
         } catch (final Exception details) {
-            aPromise.fail(details);
+            promise.fail(details);
         }
+
+        return promise.future();
     }
 
     /**
@@ -91,7 +100,7 @@ public class NamespaceMintingVerticle extends AbstractVerticle {
      * @param aRequest The request
      * @throws DBException If there's a problem with the database
      */
-    private void mintNoidNamespace(final NoidMinter aMinter, final Message<NoidMinter> aRequest) {
+    private void mintNoidNamespace(@NotNull final NoidMinter aMinter, final Message<NoidMinter> aRequest) {
         final String collection = aMinter.getNamespace();
 
         if (!myDb.exists(collection)) {
@@ -99,20 +108,41 @@ public class NamespaceMintingVerticle extends AbstractVerticle {
             final DB.TreeMapSink<String, String> dbSink =
                     myDb.treeMap(collection, Serializer.STRING_ASCII, Serializer.STRING).createFromSink();
 
-            while (aMinter.hasNext()) {
-                final String noid = aMinter.next();
-                dbSink.put(noid, "");
-            }
+            mintNoidBatch(aMinter, dbSink).onSuccess(_ -> {
+                try (BTreeMap<String, String> btree = dbSink.create()) {
+                    LOGGER.debug("Database size: {} [{}]", btree.sizeLong(), timer.stop().getSeconds());
+                }
 
-            try (BTreeMap<String, String> btree = dbSink.create()) {
-                LOGGER.debug("Db size: {} [{}]", btree.sizeLong(), timer.stop().getSeconds());
-            }
-
-            aRequest.reply("SUCCESS");
+                aRequest.reply("SUCCESS");
+            }).onFailure(cause -> {
+                LOGGER.error(cause, cause.getMessage());
+                aRequest.fail(500, cause.getMessage());
+            });
         } else {
             LOGGER.debug("db already exists");
             aRequest.fail(500, "Noid namespace already exists");
         }
+    }
 
+    /**
+     * Mints and writes a batch of NOIDs.
+     *
+     * @param aMinter The NOID minter
+     * @param aDbSink The database sink into which NOIDs are written
+     * @return A future that completes when all available NOIDs have been written
+     */
+    private Future<Void> mintNoidBatch(@NotNull final NoidMinter aMinter,
+            @NotNull final DB.TreeMapSink<String, String> aDbSink) {
+        if (!aMinter.hasNext()) {
+            return Future.succeededFuture();
+        }
+
+        return aMinter.next(MINT_BATCH_SIZE).compose(noids -> {
+            for (final String noid : noids) {
+                aDbSink.put(noid, "https://library.ucla.edu");
+            }
+
+            return mintNoidBatch(aMinter, aDbSink);
+        });
     }
 }

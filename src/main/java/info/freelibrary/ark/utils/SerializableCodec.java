@@ -16,6 +16,7 @@ import info.freelibrary.ark.MessageCodes;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A message codec for serializable objects.
@@ -38,7 +39,7 @@ public class SerializableCodec<T> implements MessageCodec<T, T> {
     }
 
     @Override
-    public void encodeToWire(final Buffer aBuffer, final T aSerializable) {
+    public void encodeToWire(@NotNull final Buffer aBuffer, final T aSerializable) {
         try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
                 ObjectOutput out = new ObjectOutputStream(byteStream)) {
             final byte[] bytes;
@@ -56,8 +57,9 @@ public class SerializableCodec<T> implements MessageCodec<T, T> {
     }
 
     @Override
+    @NotNull
     @SuppressWarnings("unchecked")
-    public T decodeFromWire(final int aPosition, final Buffer aBuffer) {
+    public T decodeFromWire(final int aPosition, @NotNull final Buffer aBuffer) {
         final int length = aBuffer.getInt(aPosition); // getInt() == 4 bytes
         final byte[] bytes = aBuffer.getBytes(aPosition + 4, aPosition + 4 + length);
 

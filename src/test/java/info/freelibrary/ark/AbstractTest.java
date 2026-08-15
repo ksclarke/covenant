@@ -1,26 +1,24 @@
 
 package info.freelibrary.ark;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-
-import info.freelibrary.util.Logger;
-
 import info.freelibrary.ark.verticles.MainVerticle;
-
+import info.freelibrary.util.Logger;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RunTestOnContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.jetbrains.annotations.NotNull;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 
 /**
  * An abstract base class for tests.
@@ -45,7 +43,7 @@ public abstract class AbstractTest {
      * @param aContext A test context
      */
     @Before
-    public void setUp(final TestContext aContext) throws IOException {
+    public void setUp(@NotNull final TestContext aContext) throws IOException {
         final DeploymentOptions options = new DeploymentOptions();
         final Async asyncTask = aContext.async();
         final int port = getAvailablePort();
@@ -53,20 +51,16 @@ public abstract class AbstractTest {
         aContext.put(Config.HTTP_PORT, port);
         options.setConfig(new JsonObject().put(Config.HTTP_PORT, port));
 
-        myTestContext.vertx().deployVerticle(MainVerticle.class.getName(), options, deployment -> {
-            if (deployment.succeeded()) {
-                try (Socket socket = new Socket(HOST, port)) {
-                    // This is expected... do nothing
-                } catch (final IOException details) {
-                    // Not necessarily an error, but a higher probability of one
-                    getLogger().warn(MessageCodes.ARK_016, port);
-                }
+        myTestContext.vertx().deployVerticle(MainVerticle.class.getName(), options).onFailure(aContext::fail)
+                .onSuccess(_ -> {
+                    try {
+                        InetAddress.getByName(HOST).isReachable(port);
+                    } catch (final IOException details) {
+                        getLogger().warn(MessageCodes.ARK_016, port);
+                    }
 
-                asyncTask.complete();
-            } else {
-                aContext.fail(deployment.cause());
-            }
-        });
+                    asyncTask.complete();
+                });
     }
 
     /**
@@ -79,7 +73,7 @@ public abstract class AbstractTest {
         final Async asyncTask = aContext.async();
         final int port = aContext.get(Config.HTTP_PORT);
 
-        myTestContext.vertx().close(shutdown -> {
+        myTestContext.vertx().close().onSuccess(_ -> {
             getLogger().debug(MessageCodes.ARK_015, port);
             asyncTask.complete();
         });
@@ -97,7 +91,7 @@ public abstract class AbstractTest {
      *
      * @param aAsyncTask An asynchronous task
      */
-    protected void complete(final Async aAsyncTask) {
+    protected void complete(@NotNull final Async aAsyncTask) {
         if (!aAsyncTask.isCompleted()) {
             aAsyncTask.complete();
         }

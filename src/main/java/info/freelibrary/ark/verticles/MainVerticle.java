@@ -4,24 +4,27 @@ package info.freelibrary.ark.verticles;
 import info.freelibrary.ark.Config;
 import info.freelibrary.ark.MessageCodes;
 import info.freelibrary.ark.Op;
-import info.freelibrary.ark.handlers.MintArkHandler;
-import info.freelibrary.ark.handlers.MintArkNamespaceHandler;
-import info.freelibrary.ark.handlers.MintNoidHandler;
-import info.freelibrary.ark.handlers.MintNoidNamespaceHandler;
+import info.freelibrary.ark.handlers.GetPidNamespaceHandler;
+import info.freelibrary.ark.handlers.MintPidHandler;
+import info.freelibrary.ark.handlers.MintPidNamespaceHandler;
 import info.freelibrary.ark.handlers.PageHandler;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import io.vertx.config.ConfigRetriever;
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.ThreadingModel;
+import io.vertx.core.VerticleBase;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.openapi.RouterBuilder;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.openapi.router.RequestExtractor;
+import io.vertx.ext.web.openapi.router.RouterBuilder;
+import io.vertx.openapi.contract.OpenAPIContract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.TimeUnit;
@@ -29,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Main verticle that starts the application.
  */
-public class MainVerticle extends AbstractVerticle {
+public class MainVerticle extends VerticleBase {
 
     /** The API specification for the application. */
     private static final String API_SPEC = "src/main/resources/covenant.yaml";
@@ -41,29 +44,20 @@ public class MainVerticle extends AbstractVerticle {
     private HttpServer myServer;
 
     @Override
-    public void start(final Promise<Void> aPromise) {
+    public Future<Void> start() {
         final ConfigRetriever configRetriever = ConfigRetriever.create(vertx);
+        final Promise<Void> promise = Promise.promise();
 
         // We pull our application's configuration before configuring the server
-        configRetriever.getConfig(configuration -> {
-            if (configuration.failed()) {
-                aPromise.fail(configuration.cause());
-            } else {
-                // We merge in any config properties that have been set for testing
-                configureServer(configuration.result().mergeIn(config()), aPromise);
-            }
-        });
+        configRetriever.getConfig().onSuccess(config -> configureServer(config.mergeIn(config()), promise))
+                .onFailure(promise::fail);
+
+        return promise.future();
     }
 
     @Override
-    public void stop(final Promise<Void> aPromise) {
-        myServer.close(close -> {
-            if (close.succeeded()) {
-                aPromise.complete();
-            } else {
-                aPromise.fail(close.cause());
-            }
-        });
+    public Future<?> stop() {
+        return myServer.close();
     }
 
     /**
@@ -75,25 +69,39 @@ public class MainVerticle extends AbstractVerticle {
     private void configureServer(@NotNull final JsonObject aConfig, @NotNull final Promise<Void> aPromise) {
         final int port = aConfig.getInteger(Config.HTTP_PORT);
 
-        RouterBuilder.create(vertx, API_SPEC).onSuccess(routerBuilder -> {
+        OpenAPIContract.from(vertx, API_SPEC).compose(contract -> {
+            final RequestExtractor requestExtractor = RequestExtractor.withBodyHandler();
+            final RouterBuilder routerBuilder = RouterBuilder.create(vertx, contract, requestExtractor);
             final Router router;
 
-            // Associate handlers with OpenAPI operation IDs
-            routerBuilder.operation(Op.MINT_ARK_NAMESPACE).handler(new MintArkNamespaceHandler(vertx));
-            routerBuilder.operation(Op.MINT_NOID_NAMESPACE).handler(new MintNoidNamespaceHandler(vertx));
-            routerBuilder.operation(Op.MINT_NOID).handler(new MintNoidHandler(vertx));
-            routerBuilder.operation(Op.MINT_ARK).handler(new MintArkHandler(vertx));
+            // Set a body handler so form POSTs will work; this also requires the request extractor above
+            routerBuilder.rootHandler(BodyHandler.create());
 
-            // Create the router from the OpenAPI specification
+            // Associate handlers with OpenAPI operation IDs
+            routerBuilder.getRoute(Op.MINT_ARK_NAMESPACE)
+                    .addHandler(new MintPidNamespaceHandler(vertx, Op.MINT_ARK_NAMESPACE));
+            routerBuilder.getRoute(Op.MINT_ARK).addHandler(new MintPidHandler(vertx, Op.MINT_ARK));
+
+            routerBuilder.getRoute(Op.MINT_NOID_NAMESPACE)
+                    .addHandler(new MintPidNamespaceHandler(vertx, Op.MINT_NOID_NAMESPACE));
+            routerBuilder.getRoute(Op.MINT_NOID).addHandler(new MintPidHandler(vertx, Op.MINT_NOID));
+
+            routerBuilder.getRoute(Op.GET_ARK_NAMESPACES)
+                    .addHandler(new GetPidNamespaceHandler(vertx, Op.GET_ARK_NAMESPACES));
+            routerBuilder.getRoute(Op.GET_NOID_NAMESPACES)
+                    .addHandler(new GetPidNamespaceHandler(vertx, Op.GET_NOID_NAMESPACES));
+
+            // Build the router from the OpenAPI contract
             router = routerBuilder.createRouter();
 
             // Set up page handlers
             router.get("/admin").handler(new PageHandler());
             router.get("/").handler(new PageHandler());
 
-            // Start the Covenant server
+            return Future.succeededFuture(router);
+        }).onSuccess(router -> {
             myServer = vertx.createHttpServer().requestHandler(router);
-            myServer.listen(port, new StartupHandler(port, aPromise));
+            myServer.listen(port).onComplete(new StartupHandler(port, aPromise));
         }).onFailure(aPromise::fail);
     }
 
@@ -120,7 +128,7 @@ public class MainVerticle extends AbstractVerticle {
         }
 
         @Override
-        public void handle(final AsyncResult<HttpServer> aStartup) {
+        public void handle(@NotNull final AsyncResult<HttpServer> aStartup) {
             if (aStartup.succeeded()) {
                 final DeploymentOptions nsMintingOpts = new DeploymentOptions().setConfig(config());
                 final String nsMintingVerticleName = NamespaceMintingVerticle.class.getName();
@@ -131,17 +139,11 @@ public class MainVerticle extends AbstractVerticle {
                 LOGGER.info(MessageCodes.ARK_007, myPort);
 
                 // If the server startup succeeds, deploy verticles into the server
-                vertx.deployVerticle(nsMintingVerticleName, nsMintingOpts, deployment -> {
-                    if (deployment.succeeded()) {
-                        myPromise.complete();
-                    } else {
-                        myPromise.fail(deployment.cause());
-                    }
-                });
+                vertx.deployVerticle(nsMintingVerticleName, nsMintingOpts).onSuccess(_ -> myPromise.complete())
+                        .onFailure(myPromise::fail);
             } else {
                 myPromise.fail(aStartup.cause());
             }
         }
-
     }
 }

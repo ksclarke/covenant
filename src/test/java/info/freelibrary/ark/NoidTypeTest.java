@@ -41,7 +41,7 @@ public class NoidTypeTest {
     }
 
     /**
-     * Tests whether fromString method throws an exception on receiving an empty string value.
+     * Tests whether fromString method throws an exception on receiving a null string value.
      */
     @Test(expected = NullPointerException.class)
     public void testFromStringNullValue() {
@@ -168,7 +168,7 @@ public class NoidTypeTest {
      * Tests the maximum number of NOIDs that the minter can mint.
      */
     @Test
-    public void testgetNoidCount() {
+    public void testGetNoidCount() {
         assertEquals(6765201L, NoidType.ALPHA_ALL.getNoidCount(4), 0);
         assertEquals(51520374361L, NoidType.ALPHANUMERIC_ALL.getNoidCount(6), 0);
         assertEquals(2251875390625L, NoidType.ALPHANUMERIC.getNoidCount(8), 0);

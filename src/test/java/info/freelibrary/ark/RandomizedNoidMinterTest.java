@@ -1,25 +1,23 @@
 
-package info.freelibrary.ark.utils;
+package info.freelibrary.ark;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.util.Iterator;
-import java.util.List;
-import java.util.UUID;
-
+import info.freelibrary.ark.utils.ChecksumUtils;
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import info.freelibrary.util.Logger;
-import info.freelibrary.util.LoggerFactory;
-
-import info.freelibrary.ark.MessageCodes;
-import info.freelibrary.ark.NoidType;
+import java.io.File;
+import java.util.Iterator;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Tests the randomized NOID minter.
@@ -40,14 +38,6 @@ public class RandomizedNoidMinterTest {
     private String myNamespace;
 
     /**
-     * Sets up the tests.
-     */
-    @Before
-    public void setUp() {
-        myNamespace = UUID.randomUUID().toString();
-    }
-
-    /**
      * Clean up after tests.
      */
     @AfterClass
@@ -61,7 +51,15 @@ public class RandomizedNoidMinterTest {
     }
 
     /**
-     * Test method for {@link RandomizedNoidMinter#next()}.
+     * Sets up the tests.
+     */
+    @Before
+    public void setUp() {
+        myNamespace = UUID.randomUUID().toString();
+    }
+
+    /**
+     * Test method for {@link info.freelibrary.ark.RandomizedNoidMinter#next()}.
      */
     @Test
     public void testNextNoid() throws Exception {
@@ -69,7 +67,7 @@ public class RandomizedNoidMinterTest {
 
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, 5, false)) {
             for (int index = 0; index < 10; index++) {
-                final String noid = minter.next();
+                final String noid = minter.next().await();
                 assertTrue(noid, noid.matches("[0-9a-z]{5}"));
             }
         }
@@ -82,12 +80,11 @@ public class RandomizedNoidMinterTest {
     public void testNextIntNoid() throws Exception {
         LOGGER.debug(MessageCodes.ARK_027, myTestName.getMethodName());
 
-        try (RandomizedNoidMinter minter =
-                new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, "k3", 5, false)) {
-            final List<String> noids = minter.next(10);
-            final Iterator<String> iterator = noids.iterator();
+        try (Minter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, "k3", 5, false)) {
+            final List<String> noidList = minter.next(10).await();
+            final Iterator<String> iterator = noidList.iterator();
 
-            assertEquals(10, noids.size());
+            assertEquals(10, noidList.size());
 
             while (iterator.hasNext()) {
                 assertTrue(iterator.next().matches("k3[a-z0-9]{5}"));
@@ -104,7 +101,7 @@ public class RandomizedNoidMinterTest {
 
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, 5)) {
             for (int index = 0; index < 10; index++) {
-                final String noid = minter.next();
+                final String noid = minter.next().await();
 
                 // Checksums are produced by default
                 assertTrue(noid.matches("[a-z0-9]{6}"));
@@ -122,7 +119,7 @@ public class RandomizedNoidMinterTest {
 
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, "f5", 5)) {
             for (int index = 0; index < 10; index++) {
-                final String noid = minter.next();
+                final String noid = minter.next().await();
 
                 // Checksums are produced by default
                 assertTrue(noid.matches("f5[a-z0-9]{6}"));
@@ -145,12 +142,33 @@ public class RandomizedNoidMinterTest {
     }
 
     /**
-     * Test method for {@link RandomizedNoidMinter#getNafNOID()}.
+     * Test method for {@link RandomizedNoidMinter#getNOID(long)} with a negative index.
+     */
+    @Test
+    public void testGetNOIDNegativeIndex() throws Exception {
+        try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, 5, false)) {
+            assertThrows(IndexOutOfBoundsException.class, () -> minter.getNOID(-1L).await());
+        }
+    }
+
+    /**
+     * Test method for {@link RandomizedNoidMinter#getNOID(long)} with an index beyond the available NOIDs.
+     */
+    @Test
+    public void testGetNOIDOutOfRangeIndex() throws Exception {
+        try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, 5, false)) {
+            assertThrows(IndexOutOfBoundsException.class,
+                    () -> minter.getNOID(NoidType.ALPHANUMERIC.getNoidCount(5)).await());
+        }
+    }
+
+    /**
+     * Test method for {@link RandomizedNoidMinter#getNOID(long)}.
      */
     @Test
     public void testGetNOID() throws Exception {
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, 5, false)) {
-            assertEquals("00000", minter.getNOID(0L));
+            assertEquals("00000", minter.getNOID(0L).await());
         }
     }
 }

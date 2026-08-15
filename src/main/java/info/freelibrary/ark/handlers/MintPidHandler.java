@@ -13,28 +13,33 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A handler that accepts requests to mint a new NOID.
  */
-public class MintNoidHandler implements Handler<RoutingContext> {
+public class MintPidHandler implements Handler<RoutingContext> {
 
-    /** The logger for the MintNoidHandler. */
-    private static final Logger LOGGER = LoggerFactory.getLogger(MintNoidHandler.class, MessageCodes.BUNDLE);
+    /** The logger for the MintPidHandler. */
+    private static final Logger LOGGER = LoggerFactory.getLogger(MintPidHandler.class, MessageCodes.BUNDLE);
 
     /** The handler's copy of the Vert.x instance. */
     private final Vertx myVertx;
+
+    /** The OpenAPI operation ID. */
+    private final String myOpID;
 
     /**
      * Creates a new handler for requests to mint NOIDs.
      *
      * @param aVertx A Vert.x instance
+     * @param anOpID The OpenAPI operation ID
      */
-    public MintNoidHandler(final Vertx aVertx) {
+    public MintPidHandler(final Vertx aVertx, final String anOpID) {
         myVertx = aVertx;
+        myOpID = anOpID;
     }
 
     @Override
     public void handle(@NotNull final RoutingContext aContext) {
         final MultiMap params = aContext.queryParams();
 
-        LOGGER.debug(params.get("noid"));
+        LOGGER.debug(params.get("noid") + " " + myOpID);
         myVertx.eventBus().send("placeholder", params);
     }
 

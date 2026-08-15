@@ -1,29 +1,31 @@
 
-package info.freelibrary.ark.utils;
+package info.freelibrary.ark;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import info.freelibrary.ark.utils.ChecksumUtils;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
-
-import info.freelibrary.ark.MessageCodes;
-import info.freelibrary.ark.NoidType;
+import io.vertx.core.Future;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A serializable minter of sequential NOIDs.
  */
-public class NoidMinter implements Iterator<String>, Serializable {
+public class NoidMinter implements Minter, Serializable {
 
     /** The logger for NoidMinter. */
     private static final Logger LOGGER = LoggerFactory.getLogger(NoidMinter.class, MessageCodes.BUNDLE);
@@ -50,7 +52,7 @@ public class NoidMinter implements Iterator<String>, Serializable {
     /** The length of the bare NOIDs minted, excluding any shoulder or checksum character. */
     private final int myNoidLength;
 
-    /** The internal counter array used to track the current position in the NOID character space. */
+    /** The internal counter-array used to track the current position in the NOID character space. */
     private final int[] myBitArray;
 
     /** The configured NOID type that determines the characters used by this minter. */
@@ -118,40 +120,138 @@ public class NoidMinter implements Iterator<String>, Serializable {
     }
 
     @Override
+    public boolean usesChecksums() {
+        return hasChecksums;
+    }
+
+    @Override
+    @NotNull
+    public Optional<String> getShoulder() {
+        return Optional.ofNullable(myShoulder);
+    }
+
+    @Override
+    @NotNull
+    public NoidType getNoidType() {
+        return myNoidType;
+    }
+
+    @Override
+    public int getNoidLength() {
+        return myNoidLength;
+    }
+
+    @Override
     public boolean hasNext() {
         return myBitArray[myNoidLength] != 1;
     }
 
-    /**
-     * Gets a batch of NOIDs. It's possible that there aren't enough NOIDs left to satisfy the request; in this case,
-     * the number of NOIDs that can be returned is. The caller is responsible for checking the list size to confirm the
-     * number of returned NOIDs.
-     *
-     * @param aCount A requested number of NOIDs
-     * @return A list containing the requested NOIDs
-     */
-    public List<String> next(final int aCount) {
-        final List<String> noids = new ArrayList<>();
+    @Override
+    @NotNull
+    public Future<List<String>> next(final int aCount) {
+        final List<String> noidList = new ArrayList<>();
+
+        if (aCount <= 0) {
+            throw new IndexOutOfBoundsException(aCount);
+        }
 
         for (int count = aCount; count > 0; count--) {
             if (!hasNext()) {
                 break; // We return what we can
             }
 
-            noids.add(next());
+            noidList.add(nextNoid());
         }
 
-        return noids;
+        return Future.succeededFuture(noidList);
     }
 
     @Override
-    public String next() {
+    @NotNull
+    public Future<String> next() {
+        if (!hasNext()) {
+            return Future.failedFuture(new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_010)));
+        }
+
+        return Future.succeededFuture(nextNoid());
+    }
+
+    /**
+     * Gets the total number of NOIDs this minter can mint.
+     *
+     * @return The total number of NOIDs this minter can mint
+     */
+    @Override
+    public long getSize() {
+        return myNoidType.getNoidCount(myNoidLength);
+    }
+
+    /**
+     * Gets the index position of the current NOID.
+     *
+     * @return The index position of the current NOID
+     */
+    @Override
+    public long getIndex() {
+        return myIndex;
+    }
+
+    @Override
+    public String toString() {
+        return LOGGER.getMessage(MessageCodes.ARK_008, NoidMinter.class.getSimpleName(), myNamespace, myNoidType,
+                myNoidLength, myShoulder == null ? "<null>" : myShoulder, hasChecksums, myIndex, getSize(), hasNext(),
+                myCurrentNoidChars, getBitArray());
+    }
+
+    /**
+     * Gets the NOID minter's namespace.
+     *
+     * @return The namespace of the minter
+     */
+    @Override
+    @NotNull
+    public String getNamespace() {
+        return myNamespace;
+    }
+
+    @Override
+    public void close() throws IOException {
+        // This is intentionally left empty; nothing to close here
+    }
+
+    /**
+     * Returns a newly minted NOID.
+     *
+     * @param aNOID A basic NOID string (without checksum or shoulder)
+     * @return A newly minted NOID
+     */
+    protected String mint(final String aNOID) {
+        if (myShoulder != null) {
+            if (hasChecksums) {
+                return ChecksumUtils.appendChecksum(myShoulder + aNOID, myNoidType);
+            } else {
+                return myShoulder + aNOID;
+            }
+        } else if (hasChecksums) {
+            return ChecksumUtils.appendChecksum(aNOID, myNoidType);
+        } else {
+            return aNOID;
+        }
+    }
+
+    /**
+     * Mints the next NOID.
+     *
+     * @return The next minted NOID
+     * @throws NoSuchElementException If there are no NOIDs left to mint
+     */
+    private String nextNoid() {
         final StringBuilder builder = new StringBuilder();
 
         int bitIndex = 0;
 
         if (!hasNext()) {
-            throw new IndexOutOfBoundsException(LOGGER.getMessage(MessageCodes.ARK_010));
+            throw new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_010));
         }
 
         myIndex++;
@@ -179,64 +279,6 @@ public class NoidMinter implements Iterator<String>, Serializable {
 
         // Reverse the string so NOIDs can be sorted in ascending order
         return mint(builder.reverse().toString());
-    }
-
-    /**
-     * Gets the total number of NOIDs this minter can mint.
-     *
-     * @return The total number of NOIDs this minter can mint
-     */
-    public long getSize() {
-        return myNoidType.getNoidCount(myNoidLength);
-    }
-
-    /**
-     * Gets the index position of the current NOID.
-     *
-     * @return The index position of the current NOID
-     */
-    public long getIndex() {
-        return myIndex;
-    }
-
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public String toString() {
-        return LOGGER.getMessage(MessageCodes.ARK_019, NoidMinter.class.getSimpleName(), myIndex, myCurrentNoidChars,
-                getBitArray());
-    }
-
-    /**
-     * Gets the NOID minter's namespace.
-     *
-     * @return The namespace of the minter
-     */
-    public String getNamespace() {
-        return myNamespace;
-    }
-
-    /**
-     * Returns a newly minted NOID.
-     *
-     * @param aNOID A basic NOID string (without checksum or shoulder)
-     * @return A newly minted NOID
-     */
-    protected String mint(final String aNOID) {
-        if (myShoulder != null) {
-            if (hasChecksums) {
-                return ChecksumUtils.appendChecksum(myShoulder + aNOID, myNoidType);
-            } else {
-                return myShoulder + aNOID;
-            }
-        } else if (hasChecksums) {
-            return ChecksumUtils.appendChecksum(aNOID, myNoidType);
-        } else {
-            return aNOID;
-        }
     }
 
     /**

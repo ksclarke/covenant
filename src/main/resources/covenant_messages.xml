@@ -12,11 +12,12 @@
   <entry key="ARK_005">NoidType was not expected: {}</entry>
   <entry key="ARK_006">NoidType is not allowed to be null</entry>
   <entry key="ARK_007">Covenant server successfully started on port {}</entry>
-  <entry key="ARK_008">NOIDs minted by the timed test minter: {}</entry>
+  <entry key="ARK_008">{}[namespace='{}', noidType={}, noidLength={}, shoulder='{}', checksums={}, index={},
+    totalSize={}, hasNext={}, currentNoidChars={}, bitArray={}]</entry>
   <entry key="ARK_009">Timed test minter created {} NOIDs in {}</entry>
   <entry key="ARK_010">Minter does not have any more NOIDs to mint</entry>
   <entry key="ARK_011">Supplied shoulder ('{}') does not conform to the "first digit" convention</entry>
-  <entry key="ARK_012">Test failed to throw expected exception: {}</entry>
+  <entry key="ARK_012">Test failed to throw the expected exception: {}</entry>
   <entry key="ARK_013">Identifier length must be a positive integer: {}</entry>
   <entry key="ARK_014">Supplied identifier length is not a valid length: {}</entry>
   <entry key="ARK_015">Successfully shutdown test server on port: {}</entry>
@@ -33,5 +34,6 @@
   <entry key="ARK_026">The randomized minter can't randomize numbers larger than 2^62; {} is too large</entry>
   <entry key="ARK_027">Running test method: {}</entry>
   <entry key="ARK_028">{}=[#{}, {}]</entry>
+  <entry key="ARK_029">Internal Server Error</entry>
 
 </properties>
