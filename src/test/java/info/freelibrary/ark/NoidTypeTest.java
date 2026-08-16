@@ -1,10 +1,10 @@
 
 package info.freelibrary.ark;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
@@ -43,28 +43,28 @@ public class NoidTypeTest {
     /**
      * Tests whether fromString method throws an exception on receiving a null string value.
      */
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testFromStringNullValue() {
-        NoidType.fromString(null);
-        fail(LOGGER.getMessage(MessageCodes.ARK_012, UnexpectedNoidTypeException.class));
+        assertThrows(NullPointerException.class, () -> NoidType.fromString(null),
+                LOGGER.getMessage(MessageCodes.ARK_012, UnexpectedNoidTypeException.class));
     }
 
     /**
      * Tests whether fromString method throws an exception on receiving an empty string value.
      */
-    @Test(expected = UnexpectedNoidTypeException.class)
+    @Test
     public void testFromStringEmptyValue() {
-        NoidType.fromString("");
-        fail(LOGGER.getMessage(MessageCodes.ARK_012, UnexpectedNoidTypeException.class));
+        assertThrows(UnexpectedNoidTypeException.class, () -> NoidType.fromString(""),
+                LOGGER.getMessage(MessageCodes.ARK_012, UnexpectedNoidTypeException.class));
     }
 
     /**
      * Tests whether fromString method throws an exception on receiving an invalid NOID type value.
      */
-    @Test(expected = UnexpectedNoidTypeException.class)
+    @Test
     public void testFromStringInvalidValue() {
-        NoidType.fromString("orange");
-        fail(LOGGER.getMessage(MessageCodes.ARK_012, UnexpectedNoidTypeException.class));
+        assertThrows(UnexpectedNoidTypeException.class, () -> NoidType.fromString("orange"),
+                LOGGER.getMessage(MessageCodes.ARK_012, UnexpectedNoidTypeException.class));
     }
 
     /**
@@ -78,10 +78,10 @@ public class NoidTypeTest {
     /**
      * Tests what happens when an illegal argument is passed to NoidType's valueOf method.
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIllegalValueOf() {
-        NoidType.valueOf(ALPHA_STRING_LC);
-        fail(LOGGER.getMessage(MessageCodes.ARK_012, IllegalArgumentException.class));
+        assertThrows(IllegalArgumentException.class, () -> NoidType.valueOf(ALPHA_STRING_LC),
+                LOGGER.getMessage(MessageCodes.ARK_012, IllegalArgumentException.class));
     }
 
     /**

@@ -37,6 +37,7 @@
 
     <!-- Compile time annotations -->
     <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
+    <junit.jupiter.version>5.11.3</junit.jupiter.version>
 
     <!-- Build plugin versions -->
     <vertx.plugin.version>2.1.0</vertx.plugin.version>
@@ -155,13 +156,20 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.jupiter.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
-      <artifactId>vertx-unit</artifactId>
+      <artifactId>vertx-junit5</artifactId>
       <version>${vertx.version}</version>
       <scope>test</scope>
     </dependency>

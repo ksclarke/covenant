@@ -1,7 +1,19 @@
 
 package info.freelibrary.ark;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
+import info.freelibrary.util.Stopwatch;
+import info.freelibrary.util.StringUtils;
+import io.vertx.core.Future;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,15 +25,6 @@ import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.util.NoSuchElementException;
 import java.util.UUID;
-
-import io.vertx.core.Future;
-import org.junit.Before;
-import org.junit.Test;
-
-import info.freelibrary.util.Logger;
-import info.freelibrary.util.LoggerFactory;
-import info.freelibrary.util.Stopwatch;
-import info.freelibrary.util.StringUtils;
 
 /**
  * A test of the NOID minter.
@@ -43,7 +46,7 @@ public class NoidMinterTest {
     /**
      * Sets up test.
      */
-    @Before
+    @BeforeEach
     public final void setUp() {
         myNamespace = UUID.randomUUID().toString();
     }
@@ -56,12 +59,12 @@ public class NoidMinterTest {
     @Test
     public final void testTime() throws IOException {
         final File dbFile = Files.createTempFile(UUID.randomUUID().toString(), NAF_EXT).toFile();
-        final NoidMinter minter = new NoidMinter(myNamespace, NoidType.ALPHA, 6);
         final Stopwatch stopwatch = new Stopwatch().start();
 
         dbFile.deleteOnExit();
 
-        try (FileWriter writer = new FileWriter(dbFile)) {
+        try (FileWriter writer = new FileWriter(dbFile);
+                NoidMinter minter = new NoidMinter(myNamespace, NoidType.ALPHA, 6)) {
             final long expectedCount = minter.getSize();
             long count = 0;
 
@@ -109,68 +112,81 @@ public class NoidMinterTest {
 
     /**
      * Tests {@link NoidMinter#hasNext() hasNext}.
+     *
+     * @throws IOException If there is an error
      */
     @Test
-    public final void testHasNextTrue() {
-        final NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 2);
+    public final void testHasNextTrue() throws IOException {
+        try (NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 2)) {
+            for (int index = 0; index < 100; index++) {
+                assertTrue(minter.hasNext());
+                assertTrue(minter.next().succeeded());
+            }
 
-        for (int index = 0; index < 100; index++) {
-            assertTrue(minter.hasNext());
-            assertTrue(minter.next().succeeded());
+            assertFalse(minter.hasNext());
         }
-
-        assertFalse(minter.hasNext());
     }
 
     /**
      * Tests {@link NoidMinter#hasNext() hasNext}.
+     *
+     * @throws IOException If there is an error
      */
     @Test
-    public final void testHasNextFalse() {
-        final NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 2);
-        final Future<String> exhausted;
+    public final void testHasNextFalse() throws IOException {
+        try (NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 2)) {
+            final Future<String> exhausted;
 
-        while (minter.hasNext()) {
-            assertTrue(minter.next().succeeded());
+            while (minter.hasNext()) {
+                assertTrue(minter.next().succeeded());
+            }
+
+            assertFalse(minter.hasNext());
+            exhausted = minter.next();
+            assertTrue(exhausted.failed());
+            assertInstanceOf(NoSuchElementException.class, exhausted.cause());
         }
-
-        assertFalse(minter.hasNext());
-        exhausted = minter.next();
-        assertTrue(exhausted.failed());
-        assertTrue(exhausted.cause() instanceof NoSuchElementException);
     }
 
     /**
      * Tests {@link NoidMinter#next() next}.
+     *
+     * @throws IOException If there is an error
      */
     @Test
-    public final void testNext() {
-        final NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 2);
-        final String previousNoid = minter.next().result();
-
-        assertNotEquals(previousNoid, minter.next().result());
+    public final void testNext() throws IOException {
+        try (NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 2)) {
+            final String previousNoid = minter.next().result();
+            assertNotEquals(previousNoid, minter.next().result());
+        }
     }
 
     /**
      * Tests {@link NoidMinter#next() next}.
+     *
+     * @throws IOException If there is an error
      */
     @Test
-    public final void testShoulder() {
-        final NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, TEST_SHOULDER, 2);
-        assertTrue(minter.next().result().startsWith(TEST_SHOULDER));
+    public final void testShoulder() throws IOException {
+        try (NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, TEST_SHOULDER, 2)) {
+            assertTrue(minter.next().result().startsWith(TEST_SHOULDER));
+        }
     }
 
     /**
      * Tests {@link NoidMinter#toString() toString}.
+     *
+     * @throws IOException If there is an error
      */
     @Test
-    public final void testToString() {
-        final NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 3);
-        final int charInt = Integer.parseInt(minter.next().await().substring(0, 1));
-        final String array = StringUtils.format("[{}, {}, {}]", charInt, charInt, charInt);
-        final String expected = LOGGER.getMessage(MessageCodes.ARK_008, NoidMinter.class.getSimpleName(), myNamespace,
-                NoidType.NUMERIC, 3, "<null>", false, 1, minter.getSize(), true, array, "10000");
+    public final void testToString() throws IOException {
+        try (NoidMinter minter = new NoidMinter(myNamespace, NoidType.NUMERIC, 3)) {
+            final int charInt = Integer.parseInt(minter.next().await().substring(0, 1));
+            final String array = StringUtils.format("[{}, {}, {}]", charInt, charInt, charInt);
+            final String expected = LOGGER.getMessage(MessageCodes.ARK_008, NoidMinter.class.getSimpleName(),
+                    myNamespace, NoidType.NUMERIC, 3, "<null>", false, 1, minter.getSize(), true, array, "10000");
 
-        assertEquals(expected, minter.toString());
+            assertEquals(expected, minter.toString());
+        }
     }
 }

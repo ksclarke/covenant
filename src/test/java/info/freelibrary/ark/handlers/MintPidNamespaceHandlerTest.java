@@ -1,8 +1,9 @@
-
 package info.freelibrary.ark.handlers;
 
+import static info.freelibrary.util.Constants.INADDR_ANY;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import info.freelibrary.ark.AbstractTest;
-import info.freelibrary.ark.Config;
 import info.freelibrary.ark.HTTP;
 import info.freelibrary.ark.MessageCodes;
 import info.freelibrary.ark.Namespace;
@@ -10,12 +11,10 @@ import info.freelibrary.ark.NoidType;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import io.vertx.core.MultiMap;
-import io.vertx.ext.unit.Async;
-import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.client.WebClient;
-import org.jetbrains.annotations.NotNull;
-import org.junit.Ignore;
-import org.junit.Test;
+import io.vertx.junit5.VertxTestContext;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * A test of the mint NOID namespace handler.
@@ -33,13 +32,11 @@ public class MintPidNamespaceHandlerTest extends AbstractTest {
      *
      * @param aContext A test context
      */
-    @Test(timeout = Long.MAX_VALUE)
-    @Ignore
-    public void testMintingNoidNamespace(@NotNull final TestContext aContext) {
-        final WebClient client = WebClient.create(myTestContext.vertx());
+    @Test
+    @Disabled
+    public void testMintingNoidNamespace(final VertxTestContext aContext) {
+        final WebClient client = WebClient.create(myVertx);
         final MultiMap form = MultiMap.caseInsensitiveMultiMap();
-        final int port = aContext.get(Config.HTTP_PORT);
-        final Async asyncTask = aContext.async();
 
         form.set(Namespace.NAME, "test-namespace");
         form.set(Namespace.LENGTH, "5");
@@ -47,10 +44,13 @@ public class MintPidNamespaceHandlerTest extends AbstractTest {
         form.set(Namespace.CHECKSUMS, "true");
         form.set(Namespace.NOID_TYPE, NoidType.ALPHANUMERIC.name());
 
-        client.post(port, HOST, MIND_NOID_NS_PATH).sendForm(form).onFailure(aContext::fail).onSuccess(response -> {
-            aContext.assertEquals(HTTP.CREATED, response.statusCode());
-            complete(asyncTask);
-        });
+        client.post(myPort, INADDR_ANY, MIND_NOID_NS_PATH).sendForm(form).onFailure(aContext::failNow)
+          .onSuccess(response -> {
+              aContext.verify(() -> {
+                  assertEquals(HTTP.CREATED, response.statusCode());
+                  complete(aContext);
+              });
+          });
     }
 
     @Override

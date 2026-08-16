@@ -1,18 +1,17 @@
 
 package info.freelibrary.ark;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import info.freelibrary.ark.utils.ChecksumUtils;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
 import java.io.File;
 import java.util.Iterator;
@@ -30,9 +29,8 @@ public class RandomizedNoidMinterTest {
     /** The location of the JVM's temporary directory. */
     private static final File TMP_DIR = new File(System.getProperty("java.io.tmpdir"));
 
-    /** A convenient hook into the test that's running. */
-    @Rule
-    public TestName myTestName = new TestName();
+    /** A convenient hook into the test method that's running. */
+    private String myTestMethodName;
 
     /** The namespace of the test minter. */
     private String myNamespace;
@@ -40,7 +38,7 @@ public class RandomizedNoidMinterTest {
     /**
      * Clean up after tests.
      */
-    @AfterClass
+    @AfterAll
     public static void tearDown() {
         final File alphanumericFive = new File(TMP_DIR, NoidType.ALPHANUMERIC.toString() + "-5.naf");
 
@@ -52,10 +50,13 @@ public class RandomizedNoidMinterTest {
 
     /**
      * Sets up the tests.
+     *
+     * @param aTestInfo Information about the test being run
      */
-    @Before
-    public void setUp() {
+    @BeforeEach
+    public void setUp(final TestInfo aTestInfo) {
         myNamespace = UUID.randomUUID().toString();
+        myTestMethodName = aTestInfo.getTestMethod().get().getName();
     }
 
     /**
@@ -63,12 +64,12 @@ public class RandomizedNoidMinterTest {
      */
     @Test
     public void testNextNoid() throws Exception {
-        LOGGER.debug(MessageCodes.ARK_027, myTestName.getMethodName());
+        LOGGER.debug(MessageCodes.ARK_027, myTestMethodName);
 
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, 5, false)) {
             for (int index = 0; index < 10; index++) {
                 final String noid = minter.next().await();
-                assertTrue(noid, noid.matches("[0-9a-z]{5}"));
+                assertTrue(noid.matches("[0-9a-z]{5}"), noid);
             }
         }
     }
@@ -78,7 +79,7 @@ public class RandomizedNoidMinterTest {
      */
     @Test
     public void testNextIntNoid() throws Exception {
-        LOGGER.debug(MessageCodes.ARK_027, myTestName.getMethodName());
+        LOGGER.debug(MessageCodes.ARK_027, myTestMethodName);
 
         try (Minter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, "k3", 5, false)) {
             final List<String> noidList = minter.next(10).await();
@@ -97,7 +98,7 @@ public class RandomizedNoidMinterTest {
      */
     @Test
     public void testNextChecksumNoid() throws Exception {
-        LOGGER.debug(MessageCodes.ARK_027, myTestName.getMethodName());
+        LOGGER.debug(MessageCodes.ARK_027, myTestMethodName);
 
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, 5)) {
             for (int index = 0; index < 10; index++) {
@@ -115,7 +116,7 @@ public class RandomizedNoidMinterTest {
      */
     @Test
     public void testNextShoulderChecksumNoid() throws Exception {
-        LOGGER.debug(MessageCodes.ARK_027, myTestName.getMethodName());
+        LOGGER.debug(MessageCodes.ARK_027, myTestMethodName);
 
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, "f5", 5)) {
             for (int index = 0; index < 10; index++) {
@@ -133,7 +134,7 @@ public class RandomizedNoidMinterTest {
      */
     @Test
     public void testToString() throws Exception {
-        LOGGER.debug(MessageCodes.ARK_027, myTestName.getMethodName());
+        LOGGER.debug(MessageCodes.ARK_027, myTestMethodName);
 
         try (RandomizedNoidMinter minter = new RandomizedNoidMinter(myNamespace, NoidType.ALPHANUMERIC, "f7", 5)) {
             assertTrue(minter.toString().matches(
