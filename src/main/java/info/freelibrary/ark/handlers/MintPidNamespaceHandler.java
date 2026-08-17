@@ -5,10 +5,10 @@ import info.freelibrary.ark.ContentType;
 import info.freelibrary.ark.HTTP;
 import info.freelibrary.ark.MessageCodes;
 import info.freelibrary.ark.Namespace;
+import info.freelibrary.ark.NoidMinter;
 import info.freelibrary.ark.NoidType;
 import info.freelibrary.ark.Op;
 import info.freelibrary.ark.UnexpectedNoidTypeException;
-import info.freelibrary.ark.NoidMinter;
 import info.freelibrary.ark.verticles.NamespaceMintingVerticle;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
@@ -60,7 +60,7 @@ public class MintPidNamespaceHandler implements Handler<RoutingContext> {
         final NoidType noidType = NoidType.fromString(params.get(Namespace.NOID_TYPE));
         final int noidLength = getLength(params.get(Namespace.LENGTH));
 
-        LOGGER.debug(MessageCodes.ARK_017, mapToJSON(params));
+        LOGGER.info(MessageCodes.ARK_017, mapToJSON(params));
 
         if (myOpID != null) {
             LOGGER.debug(myOpID);

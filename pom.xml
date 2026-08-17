@@ -7,7 +7,7 @@
   <version>0.0.1-SNAPSHOT</version>
   <name>Covenant</name>
   <description>An Archival Resource Key (ARK) microservice for the Vert.x toolkit</description>
-  <url>http://projects.freelibrary.info/covenant</url>
+  <url>https://projects.freelibrary.info/covenant</url>
 
   <licenses>
     <license>

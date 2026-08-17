@@ -1,3 +1,4 @@
+
 package info.freelibrary.ark.handlers;
 
 import static info.freelibrary.util.Constants.INADDR_ANY;
@@ -13,7 +14,7 @@ import info.freelibrary.util.LoggerFactory;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxTestContext;
-import org.junit.jupiter.api.Disabled;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -33,8 +34,7 @@ public class MintPidNamespaceHandlerTest extends AbstractTest {
      * @param aContext A test context
      */
     @Test
-    @Disabled
-    public void testMintingNoidNamespace(final VertxTestContext aContext) {
+    public void testMintingNoidNamespace(final @NotNull VertxTestContext aContext) {
         final WebClient client = WebClient.create(myVertx);
         final MultiMap form = MultiMap.caseInsensitiveMultiMap();
 
@@ -45,12 +45,12 @@ public class MintPidNamespaceHandlerTest extends AbstractTest {
         form.set(Namespace.NOID_TYPE, NoidType.ALPHANUMERIC.name());
 
         client.post(myPort, INADDR_ANY, MIND_NOID_NS_PATH).sendForm(form).onFailure(aContext::failNow)
-          .onSuccess(response -> {
-              aContext.verify(() -> {
-                  assertEquals(HTTP.CREATED, response.statusCode());
-                  complete(aContext);
-              });
-          });
+                .onSuccess(response -> {
+                    aContext.verify(() -> {
+                        assertEquals(HTTP.CREATED, response.statusCode());
+                        aContext.completeNow();
+                    });
+                });
     }
 
     @Override

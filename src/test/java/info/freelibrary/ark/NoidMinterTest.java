@@ -75,7 +75,7 @@ public class NoidMinterTest {
             }
 
             assertEquals(expectedCount, count);
-            LOGGER.debug(MessageCodes.ARK_009, "244,140,625", stopwatch.stop().getSeconds());
+            LOGGER.info(MessageCodes.ARK_009, "244,140,625", stopwatch.stop().getSeconds());
         }
     }
 

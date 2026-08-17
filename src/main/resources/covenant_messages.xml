@@ -35,5 +35,12 @@
   <entry key="ARK_027">Running test method: {}</entry>
   <entry key="ARK_028">{}=[#{}, {}]</entry>
   <entry key="ARK_029">Internal Server Error</entry>
+  <entry key="ARK_030">Received a request to mint namespace: {}</entry>
+  <entry key="ARK_031">Noid namespace already exists: {}</entry>
+  <entry key="ARK_032">Database size: {} [{}]</entry>
+  <entry key="ARK_033">Using temporary directory for the database: {}</entry>
+  <entry key="ARK_034">Deleted temporary database directory: {}</entry>
+  <entry key="ARK_035">Failed to close the database during shutdown</entry>
+  <entry key="ARK_036">The server is running on the default port: {}</entry>
 
 </properties>

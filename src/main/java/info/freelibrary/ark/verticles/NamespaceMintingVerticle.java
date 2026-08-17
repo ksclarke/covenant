@@ -1,31 +1,28 @@
 
 package info.freelibrary.ark.verticles;
 
-import java.util.UUID;
-
+import info.freelibrary.ark.MessageCodes;
+import info.freelibrary.ark.NoidMinter;
+import info.freelibrary.ark.Op;
+import info.freelibrary.ark.utils.SerializableCodec;
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
+import info.freelibrary.util.Stopwatch;
 import info.freelibrary.util.warnings.PMD;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.VerticleBase;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonObject;
 import org.jetbrains.annotations.NotNull;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException;
-import org.mapdb.DBMaker;
 import org.mapdb.Serializer;
 
-import info.freelibrary.util.Logger;
-import info.freelibrary.util.LoggerFactory;
-import info.freelibrary.util.Stopwatch;
-
-import info.freelibrary.ark.MessageCodes;
-import info.freelibrary.ark.Op;
-import info.freelibrary.ark.NoidMinter;
-import info.freelibrary.ark.utils.SerializableCodec;
-
-import io.vertx.core.Promise;
-import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.JsonObject;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A verticle that mints new NOIDs, ARKs, and their namespaces.
@@ -35,25 +32,26 @@ public class NamespaceMintingVerticle extends VerticleBase {
     /** The property that determines what type of action is needed. */
     public static final String ACTION = "covenant.minting.action";
 
-    /** The number of IDs to mint in a batch. */
-    private static final int MINT_BATCH_SIZE = 1000;
-
     /** The logger for the minting verticle. */
     private static final Logger LOGGER = LoggerFactory.getLogger(NamespaceMintingVerticle.class, MessageCodes.BUNDLE);
 
     /** The database for storing minters. */
-    private final DB myDb;
+    private final DB myDatabase;
+
+    /** The number of requests currently being processed. */
+    private final AtomicInteger myInFlight = new AtomicInteger();
 
     /**
      * Creates a new minting verticle.
+     *
+     * @param aDatabase The database for storing minters
      */
-    public NamespaceMintingVerticle() {
-        myDb = DBMaker.fileDB("/tmp/test-" + UUID.randomUUID().toString() + "-.db").transactionEnable().make();
+    public NamespaceMintingVerticle(final @NotNull DB aDatabase) {
+        myDatabase = aDatabase;
     }
 
     @Override
     @NotNull
-    @SuppressWarnings(PMD.AVOID_CATCHING_GENERIC_EXCEPTION) // That's what Vert.x throws
     public Future<Void> start() {
         final Promise<Void> promise = Promise.promise();
         final EventBus eventBus;
@@ -67,9 +65,9 @@ public class NamespaceMintingVerticle extends VerticleBase {
 
             // Receive minting messages
             eventBus.<NoidMinter>consumer(getClass().getName(), request -> {
-                final NoidMinter minter = request.body();
+                myInFlight.incrementAndGet();
 
-                try {
+                try (NoidMinter minter = request.body()) {
                     final String action = request.headers().get(ACTION);
 
                     if (Op.MINT_NOID_NAMESPACE.equals(action)) {
@@ -77,17 +75,41 @@ public class NamespaceMintingVerticle extends VerticleBase {
                     } else {
                         request.reply(new JsonObject());
                     }
-                } catch (final DBException details) {
+                } catch (final DBException | IOException details) {
                     LOGGER.error(details, details.getMessage());
                     request.fail(500, details.getMessage());
+                } finally {
+                    myInFlight.decrementAndGet();
                 }
-
-                LOGGER.info("Received minter namespace: " + minter.getNamespace());
             });
 
             promise.complete();
-        } catch (final Exception details) {
+        } catch (@SuppressWarnings(PMD.AVOID_CATCHING_GENERIC_EXCEPTION) final Exception details) {
             promise.fail(details);
+        }
+
+        return promise.future();
+    }
+
+    /**
+     * Waits for any in-flight requests to finish before undeploying, so the parent verticle doesn't close the database
+     * while a request is still using it.
+     *
+     * @return A future that completes once all in-flight requests have finished
+     */
+    @Override
+    public Future<Void> stop() {
+        final Promise<Void> promise = Promise.promise();
+
+        if (myInFlight.get() == 0) {
+            promise.complete();
+        } else {
+            vertx.setPeriodic(100, id -> {
+                if (myInFlight.get() == 0) {
+                    vertx.cancelTimer(id);
+                    promise.tryComplete();
+                }
+            });
         }
 
         return promise.future();
@@ -103,46 +125,18 @@ public class NamespaceMintingVerticle extends VerticleBase {
     private void mintNoidNamespace(@NotNull final NoidMinter aMinter, final Message<NoidMinter> aRequest) {
         final String collection = aMinter.getNamespace();
 
-        if (!myDb.exists(collection)) {
+        if (!myDatabase.exists(collection)) {
             final Stopwatch timer = new Stopwatch().start();
             final DB.TreeMapSink<String, String> dbSink =
-                    myDb.treeMap(collection, Serializer.STRING_ASCII, Serializer.STRING).createFromSink();
+                    myDatabase.treeMap(collection, Serializer.STRING_ASCII, Serializer.STRING).createFromSink();
 
-            mintNoidBatch(aMinter, dbSink).onSuccess(_ -> {
-                try (BTreeMap<String, String> btree = dbSink.create()) {
-                    LOGGER.debug("Database size: {} [{}]", btree.sizeLong(), timer.stop().getSeconds());
-                }
-
-                aRequest.reply("SUCCESS");
-            }).onFailure(cause -> {
-                LOGGER.error(cause, cause.getMessage());
-                aRequest.fail(500, cause.getMessage());
-            });
-        } else {
-            LOGGER.debug("db already exists");
-            aRequest.fail(500, "Noid namespace already exists");
-        }
-    }
-
-    /**
-     * Mints and writes a batch of NOIDs.
-     *
-     * @param aMinter The NOID minter
-     * @param aDbSink The database sink into which NOIDs are written
-     * @return A future that completes when all available NOIDs have been written
-     */
-    private Future<Void> mintNoidBatch(@NotNull final NoidMinter aMinter,
-            @NotNull final DB.TreeMapSink<String, String> aDbSink) {
-        if (!aMinter.hasNext()) {
-            return Future.succeededFuture();
-        }
-
-        return aMinter.next(MINT_BATCH_SIZE).compose(noids -> {
-            for (final String noid : noids) {
-                aDbSink.put(noid, "https://library.ucla.edu");
+            try (BTreeMap<String, String> btree = dbSink.create()) {
+                LOGGER.debug(MessageCodes.ARK_032, btree.sizeLong(), timer.stop().getSeconds());
             }
 
-            return mintNoidBatch(aMinter, aDbSink);
-        });
+            aRequest.reply(aMinter);
+        } else {
+            aRequest.fail(500, LOGGER.getMessage(MessageCodes.ARK_031, collection));
+        }
     }
 }

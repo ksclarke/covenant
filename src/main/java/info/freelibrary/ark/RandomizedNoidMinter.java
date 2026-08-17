@@ -178,6 +178,20 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
         myShoulder = aShoulder;
     }
 
+    /**
+     * Gets the next power of two.
+     *
+     * @param aValue The value from which to get the next power of two
+     * @return The next power of two
+     */
+    private static long nextPowerOfTwo(final long aValue) {
+        if (aValue <= SINGLE_INSTANCE) {
+            return 1L;
+        }
+
+        return Long.highestOneBit(aValue - 1L) << 1;
+    }
+
     @Override
     public long getIndex() {
         return myIndex;
@@ -191,13 +205,8 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
     @Override
     @NotNull
     public Future<String> next() {
-        final Long index = nextIndex();
-
-        if (index == null) {
-            return Future.failedFuture(new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_010)));
-        }
-
-        return getNOID(index);
+        return hasNext() ? getNOID(nextIndex())
+                : Future.failedFuture(new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_010)));
     }
 
     @Override
@@ -287,20 +296,6 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
     }
 
     /**
-     * Gets the next power of two.
-     *
-     * @param aValue The value from which to get the next power of two
-     * @return The next power of two
-     */
-    private static long nextPowerOfTwo(final long aValue) {
-        if (aValue <= SINGLE_INSTANCE) {
-            return 1L;
-        }
-
-        return Long.highestOneBit(aValue - 1L) << 1;
-    }
-
-    /**
      * Checks whether the existing key file appears to contain the expected number of bare NOIDs.
      *
      * @param aExpectedSize The expected size of the key file in bytes
@@ -327,7 +322,8 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
         }
 
         try {
-            getNAF().read(byteBuffer, Math.multiplyExact(aIndex, myNoidLength), byteBuffer, new CompletionHandler<>() {
+            final long position = Math.multiplyExact(aIndex, myNoidLength);
+            getNAF().read(byteBuffer, position, byteBuffer, new CompletionHandler<>() {
 
                 @Override
                 public void completed(final Integer aBytesRead, final ByteBuffer aByteBuffer) {
