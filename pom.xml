@@ -274,6 +274,24 @@
         </configuration>
       </plugin>
       <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <argLine><![CDATA[
+            ${jacoco.agent.arg}
+            --sun-misc-unsafe-memory-access=allow
+            --enable-native-access=ALL-UNNAMED
+          ]]></argLine>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>io.reactiverse</groupId>
         <artifactId>vertx-maven-plugin</artifactId>
         <version>${vertx.plugin.version}</version>
