@@ -1,14 +1,13 @@
 
 package info.freelibrary.ark.handlers;
 
-import info.freelibrary.ark.MessageCodes;
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A handler that accepts requests to mint a new NOID.
@@ -36,7 +35,7 @@ public class MintPidHandler implements Handler<RoutingContext> {
     }
 
     @Override
-    public void handle(@NotNull final RoutingContext aContext) {
+    public void handle(final RoutingContext aContext) {
         final MultiMap params = aContext.queryParams();
 
         LOGGER.debug(params.get("noid") + " " + myOpID);

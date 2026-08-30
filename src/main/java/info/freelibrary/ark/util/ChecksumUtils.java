@@ -1,8 +1,7 @@
 
-package info.freelibrary.ark.utils;
+package info.freelibrary.ark.util;
 
 import info.freelibrary.ark.NoidType;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -28,7 +27,7 @@ public final class ChecksumUtils {
      * @param aNoidType The type of NOID supplied
      * @return A checksum character
      */
-    public static Character getChecksum(@NotNull final String aBareNOID, @NotNull final NoidType aNoidType) {
+    public static Character getChecksum(final String aBareNOID, final NoidType aNoidType) {
         final Character[] characters = aNoidType.getCharacters();
 
         int factor = 2;
@@ -52,8 +51,7 @@ public final class ChecksumUtils {
      * @param aNoidType The type of NOID supplied
      * @return A NOID with a checksum
      */
-    @NotNull
-    public static String appendChecksum(@NotNull final String aBareNOID, @NotNull final NoidType aNoidType) {
+    public static String appendChecksum(final String aBareNOID, final NoidType aNoidType) {
         return aBareNOID + getChecksum(Objects.requireNonNull(aBareNOID), Objects.requireNonNull(aNoidType));
     }
 
@@ -64,7 +62,7 @@ public final class ChecksumUtils {
      * @param aNoidType The type of NOID supplied
      * @return True if the NOID's checksum is valid; else, false
      */
-    public static boolean validate(@NotNull final String aNOID, @NotNull final NoidType aNoidType) {
+    public static boolean validate(final String aNOID, final NoidType aNoidType) {
         final int charCount = Objects.requireNonNull(aNoidType).getCharacterCount();
 
         int factor = 1;
@@ -88,7 +86,7 @@ public final class ChecksumUtils {
      * @param aCharArray A character array
      * @return A code point
      */
-    private static int getCodePoint(final char aChar, @NotNull final Character... aCharArray) {
+    private static int getCodePoint(final char aChar, final Character... aCharArray) {
         return IntStream.range(0, aCharArray.length).filter(index -> aChar == aCharArray[index]).findFirst().orElse(-1);
     }
 }

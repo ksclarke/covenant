@@ -1,13 +1,15 @@
 
 package info.freelibrary.ark.verticles;
 
-import info.freelibrary.ark.Config;
-import info.freelibrary.ark.MessageCodes;
-import info.freelibrary.ark.Op;
+import static info.freelibrary.util.Constants.EMPTY;
+
 import info.freelibrary.ark.handlers.GetPidNamespaceHandler;
+import info.freelibrary.ark.handlers.MintNamespaceHandler;
 import info.freelibrary.ark.handlers.MintPidHandler;
-import info.freelibrary.ark.handlers.MintPidNamespaceHandler;
 import info.freelibrary.ark.handlers.PageHandler;
+import info.freelibrary.ark.util.Config;
+import info.freelibrary.ark.util.MessageCodes;
+import info.freelibrary.ark.util.Op;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import info.freelibrary.util.warnings.PMD;
@@ -26,7 +28,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.openapi.router.RequestExtractor;
 import io.vertx.ext.web.openapi.router.RouterBuilder;
 import io.vertx.openapi.contract.OpenAPIContract;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 
@@ -56,16 +58,18 @@ public class MainVerticle extends VerticleBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class, MessageCodes.BUNDLE);
 
     /** The application's Web server. */
+    @Nullable
     private HttpServer myServer;
 
     /** The application's database. */
+    @Nullable
     private DB myDB;
 
     /** The application's temporary database directory. */
+    @Nullable
     private String myTempDbDir;
 
     @Override
-    @NotNull
     public Future<Void> start() {
         final Promise<Void> promise = Promise.promise();
 
@@ -77,21 +81,11 @@ public class MainVerticle extends VerticleBase {
     }
 
     @Override
-    @NotNull
     public Future<Void> stop() {
         final List<Future<?>> futures = new ArrayList<>();
 
         if (myDB != null) {
-            futures.add(vertx.<Void>executeBlocking(() -> {
-                try {
-                    myDB.close();
-                } catch (@SuppressWarnings({ PMD.AVOID_CATCHING_GENERIC_EXCEPTION }) final Exception details) {
-                    LOGGER.error(MessageCodes.ARK_035, details);
-                }
-
-                // We are just closing the DB, no result needed
-                return null;
-            }));
+            futures.add(close(myDB));
         }
 
         if (myServer != null) {
@@ -104,6 +98,24 @@ public class MainVerticle extends VerticleBase {
     }
 
     /**
+     * Closes the database.
+     *
+     * @param aDB The database to close
+     * @return A future that completes when the database has been closed
+     */
+    private Future<Void> close(final DB aDB) {
+        return vertx.executeBlocking(() -> {
+            try {
+                aDB.close();
+            } catch (@SuppressWarnings(PMD.AVOID_CATCHING_GENERIC_EXCEPTION) final Exception details) {
+                LOGGER.error(MessageCodes.ARK_035, details);
+            }
+
+            return EMPTY;
+        }).mapEmpty();
+    }
+
+    /**
      * Deletes the temporary database's directory if one was created.
      *
      * @return A future that completes when the temporary directory has been deleted
@@ -113,18 +125,9 @@ public class MainVerticle extends VerticleBase {
             return Future.succeededFuture();
         }
 
+        // FIXME: We don't want to do this in the production environment
         return vertx.fileSystem().deleteRecursive(myTempDbDir)
                 .onSuccess(_ -> LOGGER.warn(MessageCodes.ARK_034, myTempDbDir)).otherwiseEmpty();
-    }
-
-    /**
-     * Checks if a resource exists.
-     *
-     * @param aResource The resource to check
-     * @return True if the resource exists, false otherwise
-     */
-    private boolean resourceExists(final @NotNull String aResource) {
-        return Thread.currentThread().getContextClassLoader().getResource(aResource) != null;
     }
 
     /**
@@ -132,9 +135,9 @@ public class MainVerticle extends VerticleBase {
      *
      * @return The API specification
      */
-    @NotNull
     private String getApiSpec() {
-        return resourceExists(API_SPEC) ? API_SPEC : Path.of("src/main/resources", API_SPEC).toString();
+        return Thread.currentThread().getContextClassLoader().getResource(API_SPEC) != null ? API_SPEC
+                : Path.of("src/main/resources", API_SPEC).toString(); // Falls back to alt location if spec not found
     }
 
     /**
@@ -143,7 +146,7 @@ public class MainVerticle extends VerticleBase {
      * @param aConfig A JSON configuration
      * @param aPromise A startup promise
      */
-    private void configureServer(@NotNull final JsonObject aConfig, @NotNull final Promise<Void> aPromise) {
+    private void configureServer(final JsonObject aConfig, final Promise<Void> aPromise) {
         OpenAPIContract.from(vertx, getApiSpec()).compose(contract -> {
             final RouterBuilder builder = RouterBuilder.create(vertx, contract, RequestExtractor.withBodyHandler());
             final Router router;
@@ -152,12 +155,11 @@ public class MainVerticle extends VerticleBase {
             builder.rootHandler(BodyHandler.create());
 
             // Associate handlers with OpenAPI operation IDs
-            builder.getRoute(Op.MINT_ARK_NAMESPACE)
-                    .addHandler(new MintPidNamespaceHandler(vertx, Op.MINT_ARK_NAMESPACE));
+            builder.getRoute(Op.MINT_ARK_NAMESPACE).addHandler(new MintNamespaceHandler(vertx, Op.MINT_ARK_NAMESPACE));
             builder.getRoute(Op.MINT_ARK).addHandler(new MintPidHandler(vertx, Op.MINT_ARK));
 
             builder.getRoute(Op.MINT_NOID_NAMESPACE)
-                    .addHandler(new MintPidNamespaceHandler(vertx, Op.MINT_NOID_NAMESPACE));
+                    .addHandler(new MintNamespaceHandler(vertx, Op.MINT_NOID_NAMESPACE));
             builder.getRoute(Op.MINT_NOID).addHandler(new MintPidHandler(vertx, Op.MINT_NOID));
 
             builder.getRoute(Op.GET_ARK_NAMESPACES)
@@ -202,13 +204,13 @@ public class MainVerticle extends VerticleBase {
          * @param aConfig The merged application configuration
          * @param aPromise A startup promise
          */
-        private StartupHandler(final @NotNull JsonObject aConfig, final @NotNull Promise<Void> aPromise) {
+        private StartupHandler(final JsonObject aConfig, final Promise<Void> aPromise) {
             myPromise = aPromise;
             myConfig = aConfig;
         }
 
         @Override
-        public void handle(@NotNull final AsyncResult<HttpServer> aStartup) {
+        public void handle(final AsyncResult<HttpServer> aStartup) {
             if (aStartup.succeeded()) {
                 vertx.<DB>executeBlocking(this::initializeDB).compose(db -> {
                     final DeploymentOptions nsMintingOpts = new DeploymentOptions().setConfig(myConfig);
@@ -218,7 +220,7 @@ public class MainVerticle extends VerticleBase {
                             .setWorkerPoolName(NamespaceMintingVerticle.class.getName()).setWorkerPoolSize(1)
                             .setMaxWorkerExecuteTime(10).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES);
 
-                    LOGGER.info(MessageCodes.ARK_007, myServer.actualPort());
+                    LOGGER.info(MessageCodes.ARK_007, aStartup.result().actualPort());
                     return vertx.deployVerticle(nsMintingVerticle, nsMintingOpts);
                 }).onSuccess(_ -> myPromise.complete()).onFailure(myPromise::fail);
             } else {
@@ -238,7 +240,6 @@ public class MainVerticle extends VerticleBase {
          * @return A database of ID relationships
          * @throws java.io.IOException If the database cannot be initialized
          */
-        @NotNull
         private DB initializeDB() throws IOException {
             final String dbDirConfig = myConfig.getString(Config.DB_FILES_DIR);
             final String dbDir = dbDirConfig == null ? Files.createTempDirectory("covenant-").toString() : dbDirConfig;

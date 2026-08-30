@@ -1,6 +1,7 @@
 
 package info.freelibrary.ark;
 
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.util.I18nRuntimeException;
 
 /**

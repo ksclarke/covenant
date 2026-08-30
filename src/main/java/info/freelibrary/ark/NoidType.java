@@ -5,7 +5,6 @@ import static info.freelibrary.util.Constants.DASH;
 import static info.freelibrary.util.Constants.UNDERSCORE;
 
 import info.freelibrary.util.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -67,10 +66,9 @@ public enum NoidType {
      *
      * @param aValue A NoidType value in string form
      * @return A NoidType that corresponds to the string input
-     * @throws UnexpectedNoidTypeException If the supplied string isn't a supported NOID type
+     * @throws info.freelibrary.ark.UnexpectedNoidTypeException If the supplied string isn't a supported NOID type
      */
-    @NotNull
-    public static NoidType fromString(@NotNull final String aValue) {
+    public static NoidType fromString(final String aValue) {
         try {
             return valueOf(Objects.requireNonNull(aValue).toUpperCase(Locale.US).replace(DASH, UNDERSCORE));
         } catch (final IllegalArgumentException details) {
@@ -123,7 +121,6 @@ public enum NoidType {
      * @param aArrayOfCharArrays An array of acceptable character arrays
      * @return A merged array of character arrays
      */
-    @NotNull
     private Character[] merge(final Character[]... aArrayOfCharArrays) {
         return Stream.of(aArrayOfCharArrays).<Character>flatMap(Stream::of).toArray(Character[]::new);
     }

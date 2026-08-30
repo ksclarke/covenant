@@ -1,13 +1,14 @@
 
 package info.freelibrary.ark.verticles;
 
-import info.freelibrary.ark.MessageCodes;
 import info.freelibrary.ark.NoidMinter;
-import info.freelibrary.ark.Op;
-import info.freelibrary.ark.utils.SerializableCodec;
+import info.freelibrary.ark.util.MessageCodes;
+import info.freelibrary.ark.util.Op;
+import info.freelibrary.ark.util.SerializableCodec;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import info.freelibrary.util.Stopwatch;
+import info.freelibrary.util.warnings.JDK;
 import info.freelibrary.util.warnings.PMD;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -15,11 +16,11 @@ import io.vertx.core.VerticleBase;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-import org.jetbrains.annotations.NotNull;
 import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBException;
 import org.mapdb.Serializer;
+import org.mapdb.serializer.GroupSerializer;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,29 +36,40 @@ public class NamespaceMintingVerticle extends VerticleBase {
     /** The logger for the minting verticle. */
     private static final Logger LOGGER = LoggerFactory.getLogger(NamespaceMintingVerticle.class, MessageCodes.BUNDLE);
 
+    /** The map name in which minters are stored. */
+    private static final String MINTERS = "minters";
+
     /** The database for storing minters. */
     private final DB myDatabase;
 
     /** The number of requests currently being processed. */
-    private final AtomicInteger myInFlight = new AtomicInteger();
+    private final AtomicInteger myInFlightCounter = new AtomicInteger();
+
+    /** The map of minters. */
+    private BTreeMap<String, NoidMinter> myMinters;
 
     /**
      * Creates a new minting verticle.
      *
      * @param aDatabase The database for storing minters
      */
-    public NamespaceMintingVerticle(final @NotNull DB aDatabase) {
+    public NamespaceMintingVerticle(final DB aDatabase) {
         myDatabase = aDatabase;
     }
 
     @Override
-    @NotNull
     public Future<Void> start() {
         final Promise<Void> promise = Promise.promise();
         final EventBus eventBus;
 
+        @SuppressWarnings(JDK.UNCHECKED)
+        final GroupSerializer<NoidMinter> serializer = (GroupSerializer<NoidMinter>) Serializer.JAVA;
+
         try {
             super.start();
+
+            // Open the map of minters
+            myMinters = myDatabase.treeMap(MINTERS, Serializer.STRING, serializer).createOrOpen();
 
             // Get the Vert.x event bus and register the codec we'll use for sharing minters
             eventBus = vertx.eventBus();
@@ -65,10 +77,15 @@ public class NamespaceMintingVerticle extends VerticleBase {
 
             // Receive minting messages
             eventBus.<NoidMinter>consumer(getClass().getName(), request -> {
-                myInFlight.incrementAndGet();
+                myInFlightCounter.incrementAndGet();
 
                 try (NoidMinter minter = request.body()) {
                     final String action = request.headers().get(ACTION);
+
+                    // Add minter to the database if it's new
+                    if (myMinters.putIfAbsent(minter.getNamespace(), minter) == null) {
+                        myDatabase.commit();
+                    }
 
                     if (Op.MINT_NOID_NAMESPACE.equals(action)) {
                         mintNoidNamespace(minter, request);
@@ -79,7 +96,7 @@ public class NamespaceMintingVerticle extends VerticleBase {
                     LOGGER.error(details, details.getMessage());
                     request.fail(500, details.getMessage());
                 } finally {
-                    myInFlight.decrementAndGet();
+                    myInFlightCounter.decrementAndGet();
                 }
             });
 
@@ -101,11 +118,11 @@ public class NamespaceMintingVerticle extends VerticleBase {
     public Future<Void> stop() {
         final Promise<Void> promise = Promise.promise();
 
-        if (myInFlight.get() == 0) {
+        if (myInFlightCounter.get() == 0) {
             promise.complete();
         } else {
             vertx.setPeriodic(100, id -> {
-                if (myInFlight.get() == 0) {
+                if (myInFlightCounter.get() == 0) {
                     vertx.cancelTimer(id);
                     promise.tryComplete();
                 }
@@ -122,16 +139,18 @@ public class NamespaceMintingVerticle extends VerticleBase {
      * @param aRequest The request
      * @throws DBException If there's a problem with the database
      */
-    private void mintNoidNamespace(@NotNull final NoidMinter aMinter, final Message<NoidMinter> aRequest) {
+    private void mintNoidNamespace(final NoidMinter aMinter, final Message<NoidMinter> aRequest) {
         final String collection = aMinter.getNamespace();
 
         if (!myDatabase.exists(collection)) {
             final Stopwatch timer = new Stopwatch().start();
-            final DB.TreeMapSink<String, String> dbSink =
-                    myDatabase.treeMap(collection, Serializer.STRING_ASCII, Serializer.STRING).createFromSink();
 
-            try (BTreeMap<String, String> btree = dbSink.create()) {
-                LOGGER.debug(MessageCodes.ARK_032, btree.sizeLong(), timer.stop().getSeconds());
+            try (BTreeMap<String, String> map =
+                    myDatabase.treeMap(collection, Serializer.STRING, Serializer.STRING).createOrOpen()) {
+                myDatabase.commit();
+                LOGGER.debug(MessageCodes.ARK_032, map.sizeLong(), timer.stop().getSeconds().trim());
+
+                LOGGER.debug("DB exists: " + myDatabase.exists(collection));
             }
 
             aRequest.reply(aMinter);

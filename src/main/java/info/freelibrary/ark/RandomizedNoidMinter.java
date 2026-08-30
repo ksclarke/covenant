@@ -3,13 +3,14 @@ package info.freelibrary.ark;
 
 import static info.freelibrary.util.Constants.SINGLE_INSTANCE;
 
+import info.freelibrary.ark.util.Config;
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
-import info.freelibrary.util.Stopwatch;
 import info.freelibrary.util.warnings.PMD;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,7 +27,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -81,6 +81,7 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
     private final long mySeed;
 
     /** The NOID array file. */
+    @Nullable
     private transient AsynchronousFileChannel myNAF;
 
     /** If the minter has a next NOID. */
@@ -125,7 +126,7 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
      * @param aNoidLength The length of NOIDs to be minted (minus shoulder and checksum character)
      * @throws IOException If there is trouble reading or writing NOIDs from a random access file
      */
-    public RandomizedNoidMinter(final String aNamespace, final NoidType aNoidType, final String aShoulder,
+    public RandomizedNoidMinter(final String aNamespace, final NoidType aNoidType, @Nullable final String aShoulder,
             final int aNoidLength) throws IOException {
         this(aNamespace, aNoidType, aShoulder, aNoidLength, true);
     }
@@ -141,9 +142,9 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
      * @throws IOException If there is trouble reading or writing NOIDs from a random access file
      * @throws IllegalArgumentException If there was a request for more NOIDs than are possible
      */
-    public RandomizedNoidMinter(final String aNamespace, final NoidType aNoidType, final String aShoulder,
+    public RandomizedNoidMinter(final String aNamespace, final NoidType aNoidType, @Nullable final String aShoulder,
             final int aNoidLength, final boolean aChecksumRequired) throws IOException {
-        super(aNamespace, aNoidType, null, aNoidLength, false);
+        super(aNamespace, aNoidType, null, aNoidLength, false); // The minter requires bare NOIDs for NAF construction
 
         // The unique name for this minter
         final String minterName = aNoidType.toString() + '-' + aNoidLength;
@@ -203,14 +204,12 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
     }
 
     @Override
-    @NotNull
     public Future<String> next() {
         return hasNext() ? getNOID(nextIndex())
                 : Future.failedFuture(new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_010)));
     }
 
     @Override
-    @NotNull
     public Future<List<String>> next(final int aCount) {
         final List<Long> indexes = nextIndexes(aCount);
         final List<Future<String>> futures;
@@ -235,7 +234,6 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
      * @param aIndex An index position to use when retrieving from the NAF
      * @return A future containing the requested NOID
      */
-    @NotNull
     public Future<String> getNOID(final long aIndex) {
         return getNoidFromNAF(aIndex);
     }
@@ -258,7 +256,6 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
      * @return The next randomized NAF index, or null if no more NOIDs are available
      * @throws NoSuchElementException If there aren't any more NOIDs available
      */
-    @NotNull
     private synchronized Long nextIndex() {
         if (!hasNextNOID) {
             throw new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_010));
@@ -282,7 +279,6 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
      * @param aCount The requested number of indices
      * @return The next randomized NAF indices
      */
-    @NotNull
     private List<Long> nextIndexes(final int aCount) {
         final List<Long> indices = new ArrayList<>();
 
@@ -312,7 +308,6 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
      * @param aIndex An index position to use when retrieving a NOID from the NAF
      * @return A future containing the requested NOID
      */
-    @NotNull
     private Future<String> getNoidFromNAF(final long aIndex) {
         final Promise<String> promise = Promise.promise();
         final ByteBuffer byteBuffer = ByteBuffer.allocate(myNoidLength);
@@ -355,7 +350,6 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
      * @return The open NAF channel
      * @throws IOException If there is trouble opening the NAF channel
      */
-    @NotNull
     private synchronized AsynchronousFileChannel getNAF() throws IOException {
         if (myNAF == null || !myNAF.isOpen()) {
             myNAF = AsynchronousFileChannel.open(myKeyFile, StandardOpenOption.READ);
@@ -420,12 +414,9 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
     private void createKeyFile(final int aNoidLength, final Path aKeyFile) throws IOException {
         try (FileChannel fileChannel = FileChannel.open(aKeyFile, StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-            final NumberFormat formatter = NumberFormat.getNumberInstance(Locale.US);
-            final String totalNoidCount = formatter.format(myTotalNoidCount);
             final long totalBytes = Math.multiplyExact(aNoidLength, myTotalNoidCount);
             final int bufferSize = (int) Math.min(totalBytes, 64 * 1024);
             final ByteBuffer buffer = ByteBuffer.allocateDirect(bufferSize + aNoidLength);
-            final Stopwatch timer = new Stopwatch().start();
 
             long bytesWritten = 0;
 
@@ -434,7 +425,9 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
 
                 while (buffer.remaining() >= aNoidLength && super.hasNext()) {
                     final String noid = super.next().toCompletionStage().toCompletableFuture().join();
-                    buffer.put(StandardCharsets.UTF_8.encode(noid));
+                    final byte[] noidBytes = noid.getBytes(StandardCharsets.UTF_8);
+
+                    buffer.put(noidBytes);
                 }
 
                 buffer.flip();
@@ -445,7 +438,6 @@ public class RandomizedNoidMinter extends NoidMinter implements Serializable {
             }
 
             fileChannel.truncate(bytesWritten);
-            LOGGER.info(MessageCodes.ARK_020, totalNoidCount, myKeyFile, timer.stop().getSeconds());
         }
     }
 }

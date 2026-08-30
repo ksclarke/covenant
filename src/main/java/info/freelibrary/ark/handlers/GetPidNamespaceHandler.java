@@ -1,13 +1,12 @@
 
 package info.freelibrary.ark.handlers;
 
-import info.freelibrary.ark.MessageCodes;
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Handler that responds to requests to list PID namespaces.
@@ -35,7 +34,7 @@ public class GetPidNamespaceHandler implements Handler<RoutingContext> {
     }
 
     @Override
-    public void handle(@NotNull final RoutingContext aContext) {
+    public void handle(final RoutingContext aContext) {
         LOGGER.debug(myVertx.toString(), myOpID);
     }
 }

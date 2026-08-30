@@ -1,5 +1,5 @@
 
-package info.freelibrary.ark;
+package info.freelibrary.ark.util;
 
 /**
  * Covenant API operation IDs.

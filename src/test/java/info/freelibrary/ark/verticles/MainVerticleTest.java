@@ -6,13 +6,12 @@ import static info.freelibrary.util.Constants.SLASH;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import info.freelibrary.ark.AbstractTest;
-import info.freelibrary.ark.HTTP;
-import info.freelibrary.ark.MessageCodes;
+import info.freelibrary.ark.util.MessageCodes;
+import info.freelibrary.util.HTTP;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxTestContext;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -31,7 +30,7 @@ public class MainVerticleTest extends AbstractTest {
      * @param aContext A test context
      */
     @Test
-    public void testThatTheServerIsStarted(final @NotNull VertxTestContext aContext) {
+    public void testThatTheServerIsStarted(final VertxTestContext aContext) {
         final WebClient client = WebClient.create(myVertx);
 
         client.get(myPort, INADDR_ANY, SLASH).send().onFailure(aContext::failNow).onSuccess(response -> {

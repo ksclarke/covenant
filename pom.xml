@@ -6,7 +6,7 @@
   <artifactId>covenant</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <name>Covenant</name>
-  <description>An Archival Resource Key (ARK) microservice for the Vert.x toolkit</description>
+  <description>An Archival Resource Key (ARK) minting and resolution service</description>
   <url>https://projects.freelibrary.info/covenant</url>
 
   <licenses>
@@ -34,9 +34,9 @@
     <slf4j.ext.version>2.0.18</slf4j.ext.version>
     <snakeyaml.version>2.6</snakeyaml.version>
     <mapdb.version>3.1.0</mapdb.version>
+    <jspecify.version>1.0.1</jspecify.version>
 
-    <!-- Compile time annotations -->
-    <jetbrains.annotations.version>26.1.0</jetbrains.annotations.version>
+    <!-- Test annotations -->
     <junit.jupiter.version>5.11.3</junit.jupiter.version>
 
     <!-- Build plugin versions -->
@@ -49,6 +49,10 @@
 
     <!-- Name of the main Vert.x verticle -->
     <main.verticle>info.freelibrary.ark.MainVerticle</main.verticle>
+
+    <!-- Configuration of the logging levels -->
+    <log.level>INFO</log.level>
+    <test.log.level>INFO</test.log.level>
   </properties>
 
   <dependencyManagement>
@@ -126,27 +130,23 @@
       <groupId>at.yawk.lz4</groupId>
       <artifactId>lz4-java</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-config</artifactId>
+      <version>${vertx.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>${jspecify.version}</version>
+      <scope>provided</scope>
+    </dependency>
 
     <!-- Below is a dependency that needs updating due to security issue (may be able to be removed in future) -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-ext</artifactId>
       <version>${slf4j.ext.version}</version>
-    </dependency>
-
-    <!-- A Vert.x plug-in for more flexible configuration control -->
-    <dependency>
-      <groupId>io.vertx</groupId>
-      <artifactId>vertx-config</artifactId>
-      <version>${vertx.version}</version>
-    </dependency>
-
-    <!-- Dependencies only used at compile time -->
-    <dependency>
-      <groupId>org.jetbrains</groupId>
-      <artifactId>annotations</artifactId>
-      <version>${jetbrains.annotations.version}</version>
-      <scope>provided</scope>
     </dependency>
 
     <!-- Below dependencies only used for testing -->
@@ -179,6 +179,25 @@
     <testResources>
       <testResource>
         <directory>src/test/resources</directory>
+        <includes>
+          <include>logback-test.xml</include>
+        </includes>
+        <filtering>true</filtering>
+      </testResource>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <excludes>
+          <exclude>logback-test.xml</exclude>
+        </excludes>
+        <filtering>false</filtering>
+      </testResource>
+
+      <!-- We can also override the default logging configuration with a file in our root project directory -->
+      <testResource>
+        <directory>${project.basedir}</directory>
+        <includes>
+          <include>logback-test.xml</include>
+        </includes>
         <filtering>true</filtering>
       </testResource>
     </testResources>
@@ -191,17 +210,20 @@
         <groupId>info.freelibrary</groupId>
         <artifactId>freelib-maven-plugins</artifactId>
         <version>${freelib.maven.version}</version>
+
+        <configuration>
+          <generatedSourcesDirectory>${project.basedir}/src/main/generated</generatedSourcesDirectory>
+        </configuration>
+
         <executions>
           <execution>
-            <phase>process-resources</phase>
+            <id>generate-media-types</id>
+            <phase>generate-sources</phase>
             <goals>
-              <goal>generate-codes</goal>
+              <goal>generate-mediatype</goal>
             </goals>
             <configuration>
-              <generatedSourcesDirectory>${project.basedir}/src/main/generated</generatedSourcesDirectory>
-              <messageFiles>
-                <messageFile>src/main/resources/covenant_messages.xml</messageFile>
-              </messageFiles>
+              <mediaTypePackage>info.freelibrary.ark.util</mediaTypePackage>
             </configuration>
           </execution>
         </executions>
@@ -284,6 +306,7 @@
           </execution>
         </executions>
         <configuration>
+          <!--suppress UnresolvedMavenProperty -->
           <argLine><![CDATA[
             ${jacoco.agent.arg}
             --sun-misc-unsafe-memory-access=allow

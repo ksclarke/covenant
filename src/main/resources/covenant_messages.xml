@@ -3,7 +3,7 @@
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 
 <properties>
-  <entry key="message-class-name">info.freelibrary.ark.MessageCodes</entry>
+  <entry key="message-class-name">info.freelibrary.ark.util.MessageCodes</entry>
 
   <entry key="ARK_001">Supplied ARK length must be between 0 and 128</entry>
   <entry key="ARK_002">Promises are not allowed to be null</entry>
@@ -12,8 +12,7 @@
   <entry key="ARK_005">NoidType was not expected: {}</entry>
   <entry key="ARK_006">NoidType is not allowed to be null</entry>
   <entry key="ARK_007">Covenant server successfully started on port {}</entry>
-  <entry key="ARK_008">{}[namespace='{}', noidType={}, noidLength={}, shoulder='{}', checksums={}, index={},
-    totalSize={}, hasNext={}, currentNoidChars={}, bitArray={}]</entry>
+  <entry key="ARK_008">{}[namespace='{}', noidType={}, noidLength={}, shoulder='{}', checksums={}, index={}, totalSize={}, hasNext={}, currentNoidChars={}, bitArray={}]</entry>
   <entry key="ARK_009">Timed test minter created {} NOIDs in {}</entry>
   <entry key="ARK_010">Minter does not have any more NOIDs to mint</entry>
   <entry key="ARK_011">Supplied shoulder ('{}') does not conform to the "first digit" convention</entry>

@@ -40,6 +40,7 @@ public final class Namespace {
      * Creates a private instance of Namespace.
      */
     private Namespace() {
+        // This is intentionally left empty
     }
 
 }

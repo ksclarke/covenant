@@ -1,16 +1,17 @@
 
 package info.freelibrary.ark.pages;
 
-import static j2html.TagCreator.*;
+import static j2html.TagCreator.body;
+import static j2html.TagCreator.div;
+import static j2html.TagCreator.document;
+import static j2html.TagCreator.html;
 
 import info.freelibrary.ark.pages.partials.Footer;
 import info.freelibrary.ark.pages.partials.Head;
 import info.freelibrary.ark.pages.partials.Language;
-
 import j2html.tags.specialized.BodyTag;
 import j2html.tags.specialized.HeadTag;
 import j2html.tags.specialized.HtmlTag;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A renderer for the administration page.
@@ -31,7 +32,6 @@ public final class AdminPage {
      * @param aAcceptLang A language to accept
      * @return An HTML string
      */
-    @NotNull
     public static String render(final String aTitle, final String aAcceptLang) {
         final HeadTag head = new Head(aTitle).getTag();
         final HtmlTag html = html(head, getBody());
@@ -47,7 +47,6 @@ public final class AdminPage {
      *
      * @return The administration page's body
      */
-    @NotNull
     private static BodyTag getBody() {
         return body(div("Hello world!").attr("class", "container-fluid"), new Footer().getTag());
     }

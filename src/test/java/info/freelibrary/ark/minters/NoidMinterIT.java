@@ -1,20 +1,22 @@
 
-package info.freelibrary.ark;
+package info.freelibrary.ark.minters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import info.freelibrary.ark.NoidMinter;
+import info.freelibrary.ark.NoidType;
+import info.freelibrary.ark.util.MessageCodes;
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
+import info.freelibrary.util.Stopwatch;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.UUID;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import info.freelibrary.util.Logger;
-import info.freelibrary.util.LoggerFactory;
-import info.freelibrary.util.Stopwatch;
 
 /**
  * An integration test for the NOID minter.

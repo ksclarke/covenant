@@ -2,7 +2,6 @@
 package info.freelibrary.ark;
 
 import io.vertx.core.Future;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,7 +25,6 @@ public interface Minter extends AutoCloseable {
      *
      * @return The namespace of the minter
      */
-    @NotNull
     String getNamespace();
 
     /**
@@ -56,7 +54,6 @@ public interface Minter extends AutoCloseable {
      * @return A future containing the next minted ID
      * @throws NoSuchElementException If there are no more IDs to mint
      */
-    @NotNull
     Future<String> next();
 
     /**
@@ -68,7 +65,6 @@ public interface Minter extends AutoCloseable {
      * @throws NoSuchElementException If there are no more IDs to mint
      * @throws IndexOutOfBoundsException If {@code aCount} is less than or equal to zero
      */
-    @NotNull
     Future<List<String>> next(int aCount);
 
     /**
@@ -83,7 +79,6 @@ public interface Minter extends AutoCloseable {
      *
      * @return The shoulder of the minter
      */
-    @NotNull
     Optional<String> getShoulder();
 
     /**
@@ -91,7 +86,6 @@ public interface Minter extends AutoCloseable {
      *
      * @return The type of Noid minted by this minter
      */
-    @NotNull
     NoidType getNoidType();
 
     /**

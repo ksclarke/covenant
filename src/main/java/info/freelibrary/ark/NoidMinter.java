@@ -4,6 +4,13 @@ package info.freelibrary.ark;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import info.freelibrary.ark.util.ChecksumUtils;
+import info.freelibrary.ark.util.MessageCodes;
+import info.freelibrary.util.Logger;
+import info.freelibrary.util.LoggerFactory;
+import io.vertx.core.Future;
+import org.jspecify.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.Serial;
 import java.io.Serializable;
@@ -15,12 +22,6 @@ import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import info.freelibrary.ark.utils.ChecksumUtils;
-import info.freelibrary.util.Logger;
-import info.freelibrary.util.LoggerFactory;
-import io.vertx.core.Future;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A serializable minter of sequential NOIDs.
@@ -41,6 +42,7 @@ public class NoidMinter implements Minter, Serializable {
     protected boolean hasChecksums;
 
     /** The shoulder for the NOIDs minted. */
+    @Nullable
     protected String myShoulder;
 
     /** The characters available for constructing NOIDs of this minter's configured type. */
@@ -83,7 +85,7 @@ public class NoidMinter implements Minter, Serializable {
      * @param aShoulder A shoulder to add to the NOID
      * @param aNoidLength A maximum NOID length
      */
-    public NoidMinter(final String aNamespace, final NoidType aNoidType, final String aShoulder,
+    public NoidMinter(final String aNamespace, final NoidType aNoidType, @Nullable final String aShoulder,
             final int aNoidLength) {
         this(aNamespace, aNoidType, aShoulder, aNoidLength, false);
     }
@@ -97,8 +99,8 @@ public class NoidMinter implements Minter, Serializable {
      * @param aNoidLength A maximum NOID length
      * @param aChecksumRequired True if the NOID returned should have a checksum character at the end
      */
-    public NoidMinter(final String aNamespace, final NoidType aNoidType, final String aShoulder, final int aNoidLength,
-            final boolean aChecksumRequired) {
+    public NoidMinter(final String aNamespace, final NoidType aNoidType, @Nullable final String aShoulder,
+            final int aNoidLength, final boolean aChecksumRequired) {
         checkArgument(aNoidLength > 0 && aNoidLength < 128, LOGGER.getMessage(MessageCodes.ARK_001));
         checkNotNull(aNoidType, LOGGER.getMessage(MessageCodes.ARK_006));
         checkNotNull(aNamespace, LOGGER.getMessage(MessageCodes.ARK_018));
@@ -114,7 +116,7 @@ public class NoidMinter implements Minter, Serializable {
         myIndex = 0;
 
         // Warn if the supplied shoulder doesn't conform to the "first digit" convention
-        if (aShoulder != null && !FIRST_DIGIT_PATTERN.matcher(aShoulder).matches()) {
+        if (myShoulder != null && !FIRST_DIGIT_PATTERN.matcher(aShoulder).matches()) {
             LOGGER.warn(MessageCodes.ARK_011, aShoulder);
         }
     }
@@ -125,13 +127,11 @@ public class NoidMinter implements Minter, Serializable {
     }
 
     @Override
-    @NotNull
     public Optional<String> getShoulder() {
         return Optional.ofNullable(myShoulder);
     }
 
     @Override
-    @NotNull
     public NoidType getNoidType() {
         return myNoidType;
     }
@@ -147,7 +147,6 @@ public class NoidMinter implements Minter, Serializable {
     }
 
     @Override
-    @NotNull
     public Future<List<String>> next(final int aCount) {
         final List<String> noidList = new ArrayList<>();
 
@@ -167,7 +166,6 @@ public class NoidMinter implements Minter, Serializable {
     }
 
     @Override
-    @NotNull
     public Future<String> next() {
         if (!hasNext()) {
             return Future.failedFuture(new NoSuchElementException(LOGGER.getMessage(MessageCodes.ARK_010)));
@@ -199,7 +197,7 @@ public class NoidMinter implements Minter, Serializable {
     @Override
     public String toString() {
         return LOGGER.getMessage(MessageCodes.ARK_008, NoidMinter.class.getSimpleName(), myNamespace, myNoidType,
-                myNoidLength, myShoulder == null ? "<null>" : myShoulder, hasChecksums, myIndex, getSize(), hasNext(),
+                myNoidLength, myShoulder == null ? "[EMPTY]" : myShoulder, hasChecksums, myIndex, getSize(), hasNext(),
                 myCurrentNoidChars, getBitArray());
     }
 
@@ -209,7 +207,6 @@ public class NoidMinter implements Minter, Serializable {
      * @return The namespace of the minter
      */
     @Override
-    @NotNull
     public String getNamespace() {
         return myNamespace;
     }

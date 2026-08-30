@@ -1,11 +1,15 @@
 
-package info.freelibrary.ark;
+package info.freelibrary.ark.minters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import info.freelibrary.ark.utils.ChecksumUtils;
+import info.freelibrary.ark.Minter;
+import info.freelibrary.ark.NoidType;
+import info.freelibrary.ark.RandomizedNoidMinter;
+import info.freelibrary.ark.util.ChecksumUtils;
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -56,7 +60,7 @@ public class RandomizedNoidMinterTest {
     @BeforeEach
     public void setUp(final TestInfo aTestInfo) {
         myNamespace = UUID.randomUUID().toString();
-        myTestMethodName = aTestInfo.getTestMethod().get().getName();
+        myTestMethodName = aTestInfo.getTestMethod().orElseThrow().getName();
     }
 
     /**

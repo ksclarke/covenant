@@ -5,16 +5,15 @@ import static info.freelibrary.util.Constants.INADDR_ANY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import info.freelibrary.ark.AbstractTest;
-import info.freelibrary.ark.HTTP;
-import info.freelibrary.ark.MessageCodes;
 import info.freelibrary.ark.Namespace;
 import info.freelibrary.ark.NoidType;
+import info.freelibrary.ark.util.MessageCodes;
+import info.freelibrary.util.HTTP;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import io.vertx.core.MultiMap;
 import io.vertx.ext.web.client.WebClient;
 import io.vertx.junit5.VertxTestContext;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -23,7 +22,7 @@ import org.junit.jupiter.api.Test;
 public class MintPidNamespaceHandlerTest extends AbstractTest {
 
     /** The logger for the test. */
-    private static final Logger LOGGER = LoggerFactory.getLogger(MintPidNamespaceHandler.class, MessageCodes.BUNDLE);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MintNamespaceHandler.class, MessageCodes.BUNDLE);
 
     /** The endpoint for minting a new NOID namespace. */
     private static final String MIND_NOID_NS_PATH = "/mint/noid/namespace";
@@ -34,7 +33,7 @@ public class MintPidNamespaceHandlerTest extends AbstractTest {
      * @param aContext A test context
      */
     @Test
-    public void testMintingNoidNamespace(final @NotNull VertxTestContext aContext) {
+    public void testMintingNoidNamespace(final VertxTestContext aContext) {
         final WebClient client = WebClient.create(myVertx);
         final MultiMap form = MultiMap.caseInsensitiveMultiMap();
 

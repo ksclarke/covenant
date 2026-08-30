@@ -4,6 +4,8 @@ package info.freelibrary.ark;
 import static info.freelibrary.util.Constants.INADDR_ANY;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import info.freelibrary.ark.util.Config;
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.ark.verticles.MainVerticle;
 import info.freelibrary.util.Logger;
 import io.vertx.core.DeploymentOptions;
@@ -11,7 +13,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -45,8 +46,8 @@ public abstract class AbstractTest {
      * @throws IOException If there is trouble getting an available port
      */
     @BeforeEach
-    public void setUp(final @NotNull Vertx aVertx, final @NotNull VertxTestContext aContext,
-            final @NotNull TestInfo aTestInfo) throws IOException {
+    public void setUp(final Vertx aVertx, final VertxTestContext aContext, final TestInfo aTestInfo)
+            throws IOException {
         final DeploymentOptions options = new DeploymentOptions();
 
         myTestName = aTestInfo.getTestMethod().orElseThrow().getName();
@@ -72,7 +73,7 @@ public abstract class AbstractTest {
      * @param aContext A test context
      */
     @AfterEach
-    public void tearDown(final @NotNull VertxTestContext aContext) {
+    public void tearDown(final VertxTestContext aContext) {
         myVertx.close().onSuccess(_ -> {
             getLogger().debug(MessageCodes.ARK_015, myPort);
             aContext.completeNow();
@@ -91,7 +92,7 @@ public abstract class AbstractTest {
      *
      * @param aContext A test context
      */
-    protected void complete(@NotNull final VertxTestContext aContext) {
+    protected void complete(final VertxTestContext aContext) {
         if (!aContext.completed()) {
             aContext.completeNow();
         }

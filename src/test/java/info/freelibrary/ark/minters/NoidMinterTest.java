@@ -1,5 +1,5 @@
 
-package info.freelibrary.ark;
+package info.freelibrary.ark.minters;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import info.freelibrary.ark.NoidMinter;
+import info.freelibrary.ark.NoidType;
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.util.Logger;
 import info.freelibrary.util.LoggerFactory;
 import info.freelibrary.util.StringUtils;
@@ -154,7 +157,7 @@ public class NoidMinterTest {
             final int charInt = Integer.parseInt(minter.next().await().substring(0, 1));
             final String array = StringUtils.format("[{}, {}, {}]", charInt, charInt, charInt);
             final String expected = LOGGER.getMessage(MessageCodes.ARK_008, NoidMinter.class.getSimpleName(),
-                    myNamespace, NoidType.NUMERIC, 3, "<null>", false, 1, minter.getSize(), true, array, "10000");
+                    myNamespace, NoidType.NUMERIC, 3, "[EMPTY]", false, 1, minter.getSize(), true, array, "10000");
 
             assertEquals(expected, minter.toString());
         }

@@ -1,8 +1,8 @@
 
 package info.freelibrary.ark;
 
+import info.freelibrary.ark.util.MessageCodes;
 import info.freelibrary.util.I18nRuntimeException;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Serial;
 
@@ -22,7 +22,7 @@ public class UnexpectedNoidTypeException extends I18nRuntimeException {
      *
      * @param aNoidType The NOID type that isn't supported or known
      */
-    public UnexpectedNoidTypeException(@NotNull final NoidType aNoidType) {
+    public UnexpectedNoidTypeException(final NoidType aNoidType) {
         super(MessageCodes.BUNDLE, MessageCodes.ARK_005, aNoidType.name());
     }
 
@@ -32,7 +32,7 @@ public class UnexpectedNoidTypeException extends I18nRuntimeException {
      * @param aNoidType The NOID type that isn't supported or known
      * @param aCause The cause of the exception
      */
-    public UnexpectedNoidTypeException(@NotNull final NoidType aNoidType, @NotNull final Throwable aCause) {
+    public UnexpectedNoidTypeException(final NoidType aNoidType, final Throwable aCause) {
         super(aCause, MessageCodes.BUNDLE, MessageCodes.ARK_005, aNoidType.name());
     }
 
@@ -51,7 +51,7 @@ public class UnexpectedNoidTypeException extends I18nRuntimeException {
      * @param aNoidTypeValue A NOID type value that isn't supported or known
      * @param aCause The cause of the exception
      */
-    public UnexpectedNoidTypeException(@NotNull final String aNoidTypeValue, @NotNull final Throwable aCause) {
+    public UnexpectedNoidTypeException(final String aNoidTypeValue, final Throwable aCause) {
         super(aCause, MessageCodes.BUNDLE, MessageCodes.ARK_005, aNoidTypeValue);
     }
 }
